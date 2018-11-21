@@ -175,9 +175,9 @@ def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
         json.dump(met, f, indent=2, sort_keys=True)
 
     # dump manifest
-    manifest_file = os.path.join(ds_dir, "manifest.safe")
-    with open(manifest_file, 'w') as f:
-        f.write(manifest)
+    #manifest_file = os.path.join(ds_dir, "manifest.safe")
+    #with open(manifest_file, 'w') as f:
+    #    f.write(manifest)
    
     # create browse?
     if browse:
@@ -223,16 +223,20 @@ def get_namespaces(xml):
 def get_manifest(session, info):
     """Get manifest information."""
 
-    #logger.info("info: {}".format(json.dumps(info, indent=2)))
-    manifest_url = "{}/Nodes('{}')/Nodes('manifest.safe')/$value".format(info['met']['alternative'],
-                                                                         info['met']['filename'])
-    manifest_url2 = manifest_url.replace('/apihub/', '/dhus/')
-    for url in (manifest_url2, manifest_url):
-        response = session.get(url, verify=False)
-        logger.info("url: %s" % response.url)
-        if response.status_code == 200: break
-    response.raise_for_status()
-    return response.content
+    # disable extraction of manifest (takes too long); will be 
+    # extracted when needed during standard product pipeline
+    if True: return None
+    else: 
+        #logger.info("info: {}".format(json.dumps(info, indent=2)))
+        manifest_url = "{}/Nodes('{}')/Nodes('manifest.safe')/$value".format(info['met']['alternative'],
+                                                                             info['met']['filename'])
+        manifest_url2 = manifest_url.replace('/apihub/', '/dhus/')
+        for url in (manifest_url2, manifest_url):
+            response = session.get(url, verify=False)
+            logger.info("url: %s" % response.url)
+            if response.status_code == 200: break
+        response.raise_for_status()
+        return response.content
 
 
 def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=None,
