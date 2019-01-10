@@ -130,12 +130,12 @@ def massage_result(res):
     res['platform'] = "Sentinel-1%s" % match.group(1)
 
     # verify track
-    if res['platform'] == "Sentinel-1A":
-        if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
-            raise RuntimeError("Failed to verify S1A relative orbit number and track number.")
-    if res['platform'] == "Sentinel-1B":
-        if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
-            raise RuntimeError("Failed to verify S1B relative orbit number and track number.")
+    #if res['platform'] == "Sentinel-1A":
+    #    if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
+    #        raise RuntimeError("Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', ''))) 
+    #if res['platform'] == "Sentinel-1B":
+    #    if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
+    #        raise RuntimeError("Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
     
 
 def get_dataset_json(met, version):
