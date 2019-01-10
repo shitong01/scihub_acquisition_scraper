@@ -22,7 +22,7 @@
     {
         "name": "polygon",
         "from": "dataset_jpath:_source.location",
-        "lambda": "lambda x: '--polygon \'' + __import__('json').dumps(x) + '\''"
+        "lambda": "lambda x: '--polygon ' + __import__('json').dumps(x).replace(' ','')"
     },
     {
         "name": "create_flag",
