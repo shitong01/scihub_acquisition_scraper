@@ -5,6 +5,9 @@ LABEL description="SciHub/ApiHub scraper PGE"
 
 USER ops
 
+#install shapely
+RUN sudo pip install shapely
+
 # copy packages
 COPY . /home/ops/verdi/ops/scihub_acquisition_scraper
 RUN set -ex \

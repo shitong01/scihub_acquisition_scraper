@@ -1,0 +1,33 @@
+{
+  "label": "AOI Validate Acquisitions",
+  "submission_type":"iteration",
+  "params" : [
+    {
+        "name": "es_dataset_url",
+        "from": "submitter"
+    },
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    },
+    {
+        "name": "starttime",
+        "from": "dataset_jpath:_source.starttime"
+    },
+    {
+        "name": "endtime",
+        "from": "dataset_jpath:_source.endtime"
+    },
+    {
+        "name": "polygon",
+        "from": "dataset_jpath:_source.location",
+        "lambda": "lambda x: '--polygon \"' + x + '\"'"
+    },
+    {
+        "name": "create_flag",
+        "from": "value",
+        "value": "--create"
+    }
+  ]
+}
