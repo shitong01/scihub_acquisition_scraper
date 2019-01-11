@@ -124,7 +124,7 @@ def submit_ipf_scraper(acq):
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
                                                          "job-specification": "job-ipf_scraper:dev-malarout"},
-                                      job_name='job-%s-%s' % ("ipf_scraper", "dev-malarout"),
+                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("id"), "dev-malarout"),
                                       enable_dedup=False)
     print("For {} , IPF scrapper Job ID: {}".format(acq.get("id"), mozart_job_id))
 

@@ -1,5 +1,5 @@
 {
-  "submission_type":"individual",
+  "submission_type":"iteration",
   "params" : [
     {
         "name": "acq_id",
