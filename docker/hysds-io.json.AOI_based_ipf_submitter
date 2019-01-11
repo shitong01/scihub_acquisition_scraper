@@ -1,0 +1,11 @@
+{
+  "submission_type":"individual",
+  "label": "AOI based submission of IPF scraper jobs",
+
+  "params" : [
+    {
+        "name": "AOI_name",
+        "from": "dataset_jpath:_id"
+    }
+  ]
+}
