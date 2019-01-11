@@ -22,7 +22,7 @@
     {
         "name": "polygon_flag",
         "from": "value",
-        "value": --polygon"
+        "value": "--polygon"
     },
     {
         "name": "polygon",
