@@ -14,6 +14,9 @@ from tabulate import tabulate
 from lxml.etree import fromstring
 from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
                                                   InsecurePlatformWarning)
+import ast
+import shapely.wkt
+from shapely.geometry import Polygon, mapping
 
 import hysds.orchestrator
 from hysds.celery import app
@@ -127,12 +130,12 @@ def massage_result(res):
     res['platform'] = "Sentinel-1%s" % match.group(1)
 
     # verify track
-    if res['platform'] == "Sentinel-1A":
-        if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
-            raise RuntimeError("Failed to verify S1A relative orbit number and track number.")
-    if res['platform'] == "Sentinel-1B":
-        if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
-            raise RuntimeError("Failed to verify S1B relative orbit number and track number.")
+    #if res['platform'] == "Sentinel-1A":
+    #    if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
+    #        raise RuntimeError("Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', ''))) 
+    #if res['platform'] == "Sentinel-1B":
+    #    if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
+    #        raise RuntimeError("Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
     
 
 def get_dataset_json(met, version):
@@ -239,7 +242,7 @@ def get_manifest(session, info):
         return response.content
 
 
-def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=None,
+def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=None, password=None,
            version="v2.0", ingest_missing=False, create_only=False, browse=False):
     """Query ApiHub (OpenSearch) for S1 SLC scenes and generate acquisition datasets."""
 
@@ -249,7 +252,9 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
 
     # set query
     query = QUERY_TEMPLATE.format(starttime, endtime)
-
+    if polygon:
+        query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
+    
     # query
     prods_all = {}
     offset = 0
@@ -353,6 +358,36 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
     #    subject = "[check_apihub] %s S1 SLC count" % aoi['data_product_name']
     #    send_email(getpass.getuser(), email_to, [], subject, msg)
 
+def convert_geojson(input_geojson):
+    '''Attempts to convert the input geojson into a polygon object. Returns the object.'''
+    if type(input_geojson) is str:
+        try:
+            input_geojson = json.loads(input_geojson)
+        except:
+            try:
+                input_geojson = ast.literal_eval(input_geojson)
+            except:
+                raise Exception('unable to parse input geojson string: {0}'.format(input_geojson))
+    #attempt to parse the coordinates to ensure a valid geojson
+    #print('input_geojson: {}'.format(input_geojson))
+    depth = lambda L: isinstance(L, list) and max(map(depth, L))+1
+    d = depth(input_geojson)
+    try:
+        # if it's a full geojson
+        if d is False and 'coordinates' in input_geojson.keys():
+            polygon = Polygon(input_geojson['coordinates'][0])
+            return polygon
+        else: # it's a list of coordinates
+            polygon = Polygon(input_geojson)
+            return polygon
+    except:
+        raise Exception('unable to parse geojson: {0}'.format(input_geojson))
+
+def convert_to_wkt(input_obj):
+    '''converts a polygon object from shapely into a wkt string for querying'''
+    return shapely.wkt.dumps(convert_geojson(input_obj))
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -364,6 +399,7 @@ if __name__ == "__main__":
                         default="%sZ" % (datetime.utcnow()-timedelta(days=1)).isoformat())
     parser.add_argument("endtime", help="End time in ISO8601 format", nargs='?',
                         default="%sZ" % datetime.utcnow().isoformat())
+    parser.add_argument("--polygon", help="Geojson polygon constraint", default=False, required=False)
     parser.add_argument("--dataset_version", help="dataset version",
                         default="v1.1", required=False)
     parser.add_argument("--user", help="SciHub user", default=None, required=False)
@@ -379,7 +415,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         scrape(args.ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
-               args.email, args.user, args.password, args.dataset_version,
+               args.email, args.polygon, args.user, args.password, args.dataset_version,
                args.ingest, args.create_only, args.browse)
     except Exception as e:
         with open('_alt_error.txt', 'a') as f:
