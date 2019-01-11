@@ -27,6 +27,10 @@
         "destination": "positional"
     },
     {
+        "name": "polygon_flag",
+        "destination": "positional"
+    },
+    {
         "name": "polygon",
         "destination": "positional"
     },
