@@ -19,9 +19,9 @@
         "from": "submitter"
     },
     {
-        "name": "create_flag",
+        "name": "ingest_flag",
         "from": "value",
-        "value": "--create"
+        "value": "--ingest"
     }
   ]
 }

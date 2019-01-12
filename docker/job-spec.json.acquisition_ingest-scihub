@@ -27,7 +27,7 @@
         "destination": "positional"
     },
     {   
-        "name": "create_flag",
+        "name": "ingest_flag",
         "destination": "positional"
     }
   ]
