@@ -23,7 +23,7 @@ from hysds.celery import app
 from hysds.dataset_ingest import ingest
 from osaka.main import get
 
-#from notify_by_email import send_email
+# from notify_by_email import send_email
 
 
 # disable warnings for SSL verification
@@ -32,8 +32,8 @@ requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 
 
 # monkey patch and clean cache
-#expire_after = timedelta(hours=1)
-#requests_cache.install_cache('check_apihub', expire_after=expire_after)
+# expire_after = timedelta(hours=1)
+# requests_cache.install_cache('check_apihub', expire_after=expire_after)
 
 
 # set logger
@@ -108,8 +108,8 @@ def massage_result(res):
     res['data_product_name'] = "acquisition-%s" % res['title']
     res['archive_filename'] = "%s.zip" % res['title']
 
-    if res['status'].upper() == "ARCHIVED":
-        res['status'] = "ACQUIRED"
+    # if res['status'].upper() == "ARCHIVED":
+    #     res['status'] = "ACQUIRED"
 
     res["source"] = "esa_scihub"
     # extract footprint and save as bbox and geojson polygon
@@ -130,6 +130,7 @@ def massage_result(res):
     res['platform'] = "Sentinel-1%s" % match.group(1)
 
     # verify track
+
     #if res['platform'] == "Sentinel-1A":
     #    if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
     #        raise RuntimeError("Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', ''))) 
@@ -178,9 +179,9 @@ def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
         json.dump(met, f, indent=2, sort_keys=True)
 
     # dump manifest
-    #manifest_file = os.path.join(ds_dir, "manifest.safe")
-    #with open(manifest_file, 'w') as f:
-    #    f.write(manifest)
+    # manifest_file = os.path.join(ds_dir, "manifest.safe")
+    # with open(manifest_file, 'w') as f:
+    #     f.write(manifest)
    
     # create browse?
     if browse:
@@ -228,16 +229,18 @@ def get_manifest(session, info):
 
     # disable extraction of manifest (takes too long); will be 
     # extracted when needed during standard product pipeline
-    if True: return None
+    if True:
+        return None
     else: 
-        #logger.info("info: {}".format(json.dumps(info, indent=2)))
+        # logger.info("info: {}".format(json.dumps(info, indent=2)))
         manifest_url = "{}/Nodes('{}')/Nodes('manifest.safe')/$value".format(info['met']['alternative'],
                                                                              info['met']['filename'])
         manifest_url2 = manifest_url.replace('/apihub/', '/dhus/')
         for url in (manifest_url2, manifest_url):
             response = session.get(url, verify=False)
             logger.info("url: %s" % response.url)
-            if response.status_code == 200: break
+            if response.status_code == 200:
+                break
         response.raise_for_status()
         return response.content
 
@@ -261,11 +264,14 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     loop = True
     total_results_expected = None
     ids_by_track = {}
+    prods_missing = []
+    prods_found = []
     while loop:
         query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
-        #query_url = url + "&".join(["%s=%s" % (i, query_params[i]) for i in query_params]).replace("(", "%28").replace(")", "%29").replace(" ", "%20")
-        #logger.info("query_url: %s" % query_url)
+        # query_url = url + "&".join(["%s=%s" % (i, query_params[i]) for i in query_params])
+        # .replace("(", "%28").replace(")", "%29").replace(" ", "%20")
+        # logger.info("query_url: %s" % query_url)
         response = session.get(url, params=query_params, verify=False)
         logger.info("query_url: %s" % response.url)
         if response.status_code != 200:
@@ -289,30 +295,29 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
                 logger.error("Failed to massage result: %s" % json.dumps(met, indent=2, sort_keys=True))
                 logger.error("Extracted entries: %s" % json.dumps(entries, indent=2, sort_keys=True))
                 raise
-            #logger.info(json.dumps(met, indent=2, sort_keys=True))
+            # logger.info(json.dumps(met, indent=2, sort_keys=True))
             ds = get_dataset_json(met, version)
-            #logger.info(json.dumps(ds, indent=2, sort_keys=True))
+            # logger.info(json.dumps(ds, indent=2, sort_keys=True))
             prods_all[met['id']] = {
                 'met': met,
                 'ds': ds,
             }
+
+            #check if exists
+            r = rhead('%s/%s' % (ds_es_url, met["id"]))
+            if r.status_code == 200:
+                prods_found.append(met["id"])
+            elif r.status_code == 404:
+                # logger.info("missing %s" % acq_id)
+                prods_missing.append(met["id"])
+            else:
+                r.raise_for_status()
+
+
             ids_by_track.setdefault(met['trackNumber'], []).append(met['id'])
 
         # don't clobber the connection
         time.sleep(3)
-
-    # check if exists
-    prods_missing = []
-    prods_found = []
-    for acq_id, info in prods_all.iteritems():
-        r = rhead('%s/%s' % (ds_es_url, acq_id))
-        if r.status_code == 200:
-            prods_found.append(acq_id)
-        elif r.status_code == 404:
-            #logger.info("missing %s" % acq_id)
-            prods_missing.append(acq_id)
-        else:
-            r.raise_for_status()
 
     # print number of products missing
     msg = "Global data availability for %s through %s:\n" % (starttime, endtime)
@@ -354,9 +359,9 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
             logger.info("Created %s\n" % acq_id)
 
     # email
-    #if email_to is not None:
-    #    subject = "[check_apihub] %s S1 SLC count" % aoi['data_product_name']
-    #    send_email(getpass.getuser(), email_to, [], subject, msg)
+    # if email_to is not None:
+    #     subject = "[check_apihub] %s S1 SLC count" % aoi['data_product_name']
+    #     send_email(getpass.getuser(), email_to, [], subject, msg)
 
 def convert_geojson(input_geojson):
     '''Attempts to convert the input geojson into a polygon object. Returns the object.'''
@@ -392,7 +397,7 @@ def convert_to_wkt(input_obj):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ds_es_url", help="ElasticSearch URL for acquisition dataset, e.g. " +
-                         "http://aria-products.jpl.nasa.gov:9200/grq_v1.1_acquisition-s1-iw_slc/acquisition-S1-IW_SLC")
+                         "http://aria-products.jpl.nasa.gov:9200/grq_v2.0_acquisition-s1-iw_slc/acquisition-S1-IW_SLC")
     parser.add_argument("datasets_cfg", help="HySDS datasets.json file, e.g. " +
                          "/home/ops/verdi/etc/datasets.json")
     parser.add_argument("starttime", help="Start time in ISO8601 format", nargs='?',
@@ -401,7 +406,7 @@ if __name__ == "__main__":
                         default="%sZ" % datetime.utcnow().isoformat())
     parser.add_argument("--polygon", help="Geojson polygon constraint", default=False, required=False)
     parser.add_argument("--dataset_version", help="dataset version",
-                        default="v1.1", required=False)
+                        default="v2.0", required=False)
     parser.add_argument("--user", help="SciHub user", default=None, required=False)
     parser.add_argument("--password", help="SciHub password", default=None, required=False)
     parser.add_argument("--email", help="email addresses to send email to", 

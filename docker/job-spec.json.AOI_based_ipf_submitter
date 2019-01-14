@@ -1,0 +1,18 @@
+{
+  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/AOI_based_ipf_submitter.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "required-queues": [
+    "factotum-job_worker-small"
+  ],
+  "disk_usage":"4GB",
+  "soft_time_limit": 3300,
+  "time_limit": 3600,
+  "params" : [
+    {
+      "name": "AOI_name",
+      "destination": "context"
+    }
+  ]
+}

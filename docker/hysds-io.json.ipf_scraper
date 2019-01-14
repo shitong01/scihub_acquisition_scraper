@@ -1,0 +1,18 @@
+{
+  "submission_type":"iteration",
+  "params" : [
+    {
+        "name": "acq_id",
+        "from": "dataset_jpath:_id"
+    },
+    {
+        "name": "acq_met",
+        "from": "dataset_jpath:_source.metadata"
+    },
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    }
+  ]
+}
