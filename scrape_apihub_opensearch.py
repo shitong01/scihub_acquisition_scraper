@@ -7,16 +7,13 @@ acquisition datasets.
 import os, sys, time, re, requests, json, logging, traceback, argparse
 import shutil, hashlib, getpass, tempfile, backoff
 from subprocess import check_call
-#import requests_cache
 from datetime import datetime, timedelta
-from urlparse import urlparse
 from tabulate import tabulate
-from lxml.etree import fromstring
 from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
                                                   InsecurePlatformWarning)
 import ast
 import shapely.wkt
-from shapely.geometry import Polygon, mapping
+from shapely.geometry import Polygon
 
 import hysds.orchestrator
 from hysds.celery import app
@@ -211,17 +208,7 @@ def rhead(url):
     return requests.head(url)
 
 
-def get_namespaces(xml):
-    """Take an xml string and return a dict of namespace prefixes to
-       namespaces mapping."""
 
-    nss = {}
-    matches = re.findall(r'\s+xmlns:?(\w*?)\s*=\s*[\'"](.*?)[\'"]', xml)
-    for match in matches:
-        prefix = match[0]; ns = match[1]
-        if prefix == '': prefix = '_default'
-        nss[prefix] = ns
-    return nss
 
 
 def get_manifest(session, info):
@@ -254,7 +241,7 @@ def get_existing_acqs(start_time, end_time, location=False):
     :param end_time:
     :return:
     """
-    index = "grq_2.0_acquisition-s1-iw_slc"
+    index = "grq_v2.0_acquisition-s1-iw_slc"
     type = "acquisition-S1-IW_SLC"
 
     query = {
