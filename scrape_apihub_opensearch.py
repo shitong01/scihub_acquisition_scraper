@@ -127,12 +127,12 @@ def massage_result(res):
     res['platform'] = "Sentinel-1%s" % match.group(1)
 
     # verify track
-    if res['platform'] == "Sentinel-1A":
-        if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
-            raise RuntimeError("Failed to verify S1A relative orbit number and track number.")
-    if res['platform'] == "Sentinel-1B":
-        if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
-            raise RuntimeError("Failed to verify S1B relative orbit number and track number.")
+    # if res['platform'] == "Sentinel-1A":
+    #     if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
+    #         raise RuntimeError("Failed to verify S1A relative orbit number and track number.")
+    # if res['platform'] == "Sentinel-1B":
+    #     if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
+    #         raise RuntimeError("Failed to verify S1B relative orbit number and track number.")
     
 
 def get_dataset_json(met, version):
@@ -258,6 +258,8 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
     loop = True
     total_results_expected = None
     ids_by_track = {}
+    prods_missing = []
+    prods_found = []
     while loop:
         query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
@@ -294,23 +296,22 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
                 'met': met,
                 'ds': ds,
             }
+
+            #check if exists
+            r = rhead('%s/%s' % (ds_es_url, met["id"]))
+            if r.status_code == 200:
+                prods_found.append(met["id"])
+            elif r.status_code == 404:
+                # logger.info("missing %s" % acq_id)
+                prods_missing.append(met["id"])
+            else:
+                r.raise_for_status()
+
+
             ids_by_track.setdefault(met['trackNumber'], []).append(met['id'])
 
         # don't clobber the connection
         time.sleep(3)
-
-    # check if exists
-    prods_missing = []
-    prods_found = []
-    for acq_id, info in prods_all.iteritems():
-        r = rhead('%s/%s' % (ds_es_url, acq_id))
-        if r.status_code == 200:
-            prods_found.append(acq_id)
-        elif r.status_code == 404:
-            # logger.info("missing %s" % acq_id)
-            prods_missing.append(acq_id)
-        else:
-            r.raise_for_status()
 
     # print number of products missing
     msg = "Global data availability for %s through %s:\n" % (starttime, endtime)
@@ -360,7 +361,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ds_es_url", help="ElasticSearch URL for acquisition dataset, e.g. " +
-                         "http://aria-products.jpl.nasa.gov:9200/grq_v1.1_acquisition-s1-iw_slc/acquisition-S1-IW_SLC")
+                         "http://aria-products.jpl.nasa.gov:9200/grq_v2.0_acquisition-s1-iw_slc/acquisition-S1-IW_SLC")
     parser.add_argument("datasets_cfg", help="HySDS datasets.json file, e.g. " +
                          "/home/ops/verdi/etc/datasets.json")
     parser.add_argument("starttime", help="Start time in ISO8601 format", nargs='?',
@@ -368,7 +369,7 @@ if __name__ == "__main__":
     parser.add_argument("endtime", help="End time in ISO8601 format", nargs='?',
                         default="%sZ" % datetime.utcnow().isoformat())
     parser.add_argument("--dataset_version", help="dataset version",
-                        default="v1.1", required=False)
+                        default="v2.0", required=False)
     parser.add_argument("--user", help="SciHub user", default=None, required=False)
     parser.add_argument("--password", help="SciHub password", default=None, required=False)
     parser.add_argument("--email", help="email addresses to send email to", 
