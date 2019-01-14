@@ -31,7 +31,7 @@ def get_non_ipf_acquisitions(location, start_time, end_time):
     :param end_time:
     :return:
     """
-    index = "grq_v1.1_acquisition-s1-iw_slc"
+    index = "grq_2.0_acquisition-s1-iw_slc"
     type = "acquisition-S1-IW_SLC"
     query = {
         "query": {

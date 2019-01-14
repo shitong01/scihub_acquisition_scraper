@@ -245,6 +245,76 @@ def get_manifest(session, info):
         return response.content
 
 
+def get_existing_acqs(start_time, end_time, location=False):
+    """
+    This function would query for all the acquisitions that
+    temporally and spatially overlap with the AOI
+    :param location:
+    :param start_time:
+    :param end_time:
+    :return:
+    """
+    index = "grq_2.0_acquisition-s1-iw_slc"
+    type = "acquisition-S1-IW_SLC"
+
+    query = {
+        "query": {
+            "filtered": {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "range": {
+                                    "metadata.sensingStart": {
+                                        "to": end_time,
+                                        "from": start_time
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+
+    if location:
+        geo_shape = {
+                    "geo_shape": {
+                        "location": {
+                            "shape": location
+                        }
+                    }
+                }
+        query["query"]["filtered"]["filter"] = geo_shape
+
+    acq_ids = []
+    rest_url = app.conf["GRQ_ES_URL"][:-1] if app.conf["GRQ_ES_URL"].endswith('/') else app.conf["GRQ_ES_URL"]
+    url = "{}/{}/_search?search_type=scan&scroll=60&size=10000".format(rest_url, index)
+    r = requests.post(url, data=json.dumps(query))
+    r.raise_for_status()
+    scan_result = r.json()
+    count = scan_result['hits']['total']
+    if count == 0:
+        return []
+    if '_scroll_id' not in scan_result:
+        print("_scroll_id not found in scan_result. Returning empty array for the query :\n%s" % query)
+        return []
+    scroll_id = scan_result['_scroll_id']
+    hits = []
+    while True:
+        r = requests.post('%s/_search/scroll?scroll=60m' % rest_url, data=scroll_id)
+        res = r.json()
+        scroll_id = res['_scroll_id']
+        if len(res['hits']['hits']) == 0:
+            break
+        hits.extend(res['hits']['hits'])
+
+    for item in hits:
+        acq_ids.append(item.get("_id"))
+
+    return acq_ids
+
 def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=None, password=None,
            version="v2.0", ingest_missing=False, create_only=False, browse=False):
     """Query ApiHub (OpenSearch) for S1 SLC scenes and generate acquisition datasets."""
@@ -266,6 +336,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     ids_by_track = {}
     prods_missing = []
     prods_found = []
+    existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=polygon)
     while loop:
         query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
@@ -304,15 +375,10 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
             }
 
             #check if exists
-            r = rhead('%s/%s' % (ds_es_url, met["id"]))
-            if r.status_code == 200:
-                prods_found.append(met["id"])
-            elif r.status_code == 404:
-                # logger.info("missing %s" % acq_id)
+            if met["id"] not in existing_acqs:
                 prods_missing.append(met["id"])
             else:
-                r.raise_for_status()
-
+                prods_found.append(met["id"])
 
             ids_by_track.setdefault(met['trackNumber'], []).append(met['id'])
 
