@@ -267,11 +267,7 @@ def get_existing_acqs(start_time, end_time, location=False):
 
     if location:
         geo_shape = {
-                    "geo_shape": {
-                        "location": {
-                            "shape": location
-                        }
-                    }
+                    "geo_shape": location
                 }
         query["query"]["filtered"]["filter"] = geo_shape
 
@@ -323,7 +319,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     ids_by_track = {}
     prods_missing = []
     prods_found = []
-    existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=polygon)
+    existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=json.loads(polygon))
     while loop:
         query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
