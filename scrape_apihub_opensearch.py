@@ -267,7 +267,11 @@ def get_existing_acqs(start_time, end_time, location=False):
 
     if location:
         geo_shape = {
-                    "geo_shape": location
+                    "geo_shape": {
+                        "location": {
+                            "shape": location
+                        }
+                    }
                 }
         query["query"]["filtered"]["filter"] = geo_shape
 
