@@ -8,6 +8,9 @@ USER ops
 #install shapely
 RUN sudo pip install shapely
 
+#install elasticsearch
+RUN sudo pip install elasticsearch
+
 # copy packages
 COPY . /home/ops/verdi/ops/scihub_acquisition_scraper
 RUN set -ex \
