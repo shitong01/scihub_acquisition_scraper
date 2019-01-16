@@ -314,6 +314,9 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     query = QUERY_TEMPLATE.format(starttime, endtime)
     if polygon:
         query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
+        existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=json.loads(polygon))
+    else:
+        existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime)
     
     # query
     prods_all = {}
@@ -323,7 +326,6 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     ids_by_track = {}
     prods_missing = []
     prods_found = []
-    existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=json.loads(polygon))
     while loop:
         query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
