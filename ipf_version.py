@@ -4,6 +4,7 @@ import re
 import requests
 import logging
 import elasticsearch
+import traceback
 from hysds.celery import app
 
 log_format = "[%(asctime)s: %(levelname)s/%(funcName)s] %(message)s"
@@ -97,14 +98,16 @@ def extract_asf_ipf(id):
         # query the asf search api to find the download url for the .iso.xml file
         request_string = 'https://api.daac.asf.alaska.edu/services/search/param?platform=SA,SB&processingLevel=METADATA_SLC' \
                          '&granule_list=%s&output=json' % id
+        logger.info("ASF request URL: {}".format(request_string))
         response = requests.get(request_string)
         response.raise_for_status()
         results = json.loads(response.text)
+        logger.debug("Response from ASF: {}".format(response.text))
         # download the .iso.xml file, assumes earthdata login credentials are in your .netrc file
         response = requests.get(results[0][0]['downloadUrl'])
         response.raise_for_status()
         # parse the xml file to extract the ipf version string
-        root = ElementTree.fromstring(response.text.encode('utf-8'))
+        root = fromstring(response.text.encode('utf-8'))
         ns = {'gmd': 'http://www.isotc211.org/2005/gmd', 'gmi': 'http://www.isotc211.org/2005/gmi',
               'gco': 'http://www.isotc211.org/2005/gco'}
         ipf_string = root.find(
@@ -114,13 +117,14 @@ def extract_asf_ipf(id):
             ipf = ipf_string.split('version')[1].split(')')[0].strip()
     except Exception as err:
         logger.info("get_processing_version_from_asf : %s" % str(err))
+        raise Exception("Error get_processing_version_from_asf : %s" % str(err))
 
     return ipf
 
 
 def update_ipf(id, ipf_version):
     ES.update(index=_index, doc_type=_type, id=id,
-              body={"doc": {"processing_version": ipf_version}})
+              body={"doc": {"metadata": {"processing_version": ipf_version}}})
 
 
 def extract_scihub_ipf(met):
@@ -159,11 +163,13 @@ if __name__ == "__main__":
     met = ctx["acq_met"]
 
     try:
-        ipf = extract_asf_ipf(id)
+        ipf = extract_asf_ipf(met.get("identifier"))
     except Exception:
         try:
             ipf = extract_scihub_ipf(met)
         except Exception:
+            with open('_alt_error.txt', 'w') as f:
+                f.write("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
             raise Exception("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
 
     update_ipf(id, ipf)

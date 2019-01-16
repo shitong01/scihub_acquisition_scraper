@@ -99,12 +99,12 @@ def submit_ipf_scraper(acq):
         {
             "name": "acq_id",
             "from": "value",
-            "value": acq.get("id")
+            "value": acq.get("_id")
         },
         {
             "name": "acq_met",
             "from": "value",
-            "value": acq.get("metadata")
+            "value": acq.get("_source").get("metadata")
         },
         {
             "name": "ds_cfg",
@@ -116,17 +116,17 @@ def submit_ipf_scraper(acq):
     rule = {
         "rule_name": "acq_ipf_scraper",
         "queue": "factotum-job_worker-apihub_scraper_throttled",
-        "priority": '2',
+        "priority": '5',
         "kwargs": '{}'
     }
 
     print('submitting jobs with params:')
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
-                                                         "job-specification": "job-ipf_scraper:dev-malarout"},
-                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("id"), "dev-malarout"),
+                                                         "job-specification": "job-ipf_scraper:master"},
+                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("_id"), "master"),
                                       enable_dedup=False)
-    print("For {} , IPF scrapper Job ID: {}".format(acq.get("id"), mozart_job_id))
+    print("For {} , IPF scrapper Job ID: {}".format(acq.get("_id"), mozart_job_id))
 
 
 if __name__ == "__main__":
@@ -137,10 +137,9 @@ if __name__ == "__main__":
     """
     ctx = json.loads(open("_context.json", "r").read())
     AOI_name = ctx.get("AOI_name")
-    record = get_AOI(AOI_name)
-    location = record.get("_source").get("location")
-    start_time = record.get("_source").get("starttime")
-    end_time = record.get("_source").get("endtime")
+    location = ctx.get("spatial_extent")
+    start_time = ctx.get("start_time")
+    end_time = ctx.get("end_time")
     acqs_list = get_non_ipf_acquisitions(location, start_time, end_time)
     for acq in acqs_list:
         submit_ipf_scraper(acq)

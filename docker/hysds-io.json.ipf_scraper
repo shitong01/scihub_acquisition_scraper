@@ -1,5 +1,6 @@
 {
   "submission_type":"iteration",
+  "label": "IPF Scraper for given acquisition",
   "params" : [
     {
         "name": "acq_id",

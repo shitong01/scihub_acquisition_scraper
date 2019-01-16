@@ -13,6 +13,18 @@
     {
       "name": "AOI_name",
       "destination": "context"
+    },
+    {
+      "name": "spatial_extent",
+      "destination": "context"
+    },
+    {
+      "name": "start_time",
+      "destination": "context"
+    },
+    {
+      "name": "end_time",
+      "destination": "context"
     }
   ]
 }
