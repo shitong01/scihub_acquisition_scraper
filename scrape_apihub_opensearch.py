@@ -128,12 +128,12 @@ def massage_result(res):
 
     # verify track
 
-    #if res['platform'] == "Sentinel-1A":
-    #    if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
-    #        raise RuntimeError("Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', ''))) 
-    #if res['platform'] == "Sentinel-1B":
-    #    if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
-    #        raise RuntimeError("Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
+    if res['platform'] == "Sentinel-1A":
+       if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
+           logger.info("WARNING: Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
+    if res['platform'] == "Sentinel-1B":
+       if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
+           logger.info("WARNING: Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
     
 
 def get_dataset_json(met, version):
@@ -148,7 +148,7 @@ def get_dataset_json(met, version):
     }
 
 
-def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
+def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     """Create acquisition dataset. Return tuple of (dataset ID, dataset dir)."""
 
     # create dataset dir
@@ -159,12 +159,7 @@ def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
 
     # append source to met
     met['query_api'] = "opensearch"
-
-    # append processing version (ipf)
-    # ns = get_namespaces(manifest)
-    # x = fromstring(manifest)
-    # ipf = x.xpath('.//xmlData/safe:processing/safe:facility/safe:software/@version', namespaces=ns)[0]
-    # met['processing_version'] = ipf
+    # set IPF version to None
     met['processing_version'] = None
 
     # dump dataset and met JSON
@@ -174,11 +169,6 @@ def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
         json.dump(ds, f, indent=2, sort_keys=True)
     with open(met_file, 'w') as f:
         json.dump(met, f, indent=2, sort_keys=True)
-
-    # dump manifest
-    # manifest_file = os.path.join(ds_dir, "manifest.safe")
-    # with open(manifest_file, 'w') as f:
-    #     f.write(manifest)
    
     # create browse?
     if browse:
@@ -193,11 +183,11 @@ def create_acq_dataset(ds, met, manifest, root_ds_dir=".", browse=False):
     return id, ds_dir
 
 
-def ingest_acq_dataset(ds, met, manifest, ds_cfg, browse=False):
+def ingest_acq_dataset(ds, met, ds_cfg, browse=False):
     """Create acquisition dataset and ingest."""
 
     tmp_dir = tempfile.mkdtemp()
-    id, ds_dir = create_acq_dataset(ds, met, manifest, tmp_dir, browse)
+    id, ds_dir = create_acq_dataset(ds, met, tmp_dir, browse)
     ingest(id, ds_cfg, app.conf.GRQ_UPDATE_URL, app.conf.DATASET_PROCESSED_QUEUE, ds_dir, None)
     shutil.rmtree(tmp_dir)
 
@@ -206,30 +196,6 @@ def ingest_acq_dataset(ds, met, manifest, ds_cfg, browse=False):
                       max_tries=8, max_value=32)
 def rhead(url):
     return requests.head(url)
-
-
-
-
-
-def get_manifest(session, info):
-    """Get manifest information."""
-
-    # disable extraction of manifest (takes too long); will be 
-    # extracted when needed during standard product pipeline
-    if True:
-        return None
-    else: 
-        # logger.info("info: {}".format(json.dumps(info, indent=2)))
-        manifest_url = "{}/Nodes('{}')/Nodes('manifest.safe')/$value".format(info['met']['alternative'],
-                                                                             info['met']['filename'])
-        manifest_url2 = manifest_url.replace('/apihub/', '/dhus/')
-        for url in (manifest_url2, manifest_url):
-            response = session.get(url, verify=False)
-            logger.info("url: %s" % response.url)
-            if response.status_code == 200:
-                break
-        response.raise_for_status()
-        return response.content
 
 
 def get_existing_acqs(start_time, end_time, location=False):
@@ -301,6 +267,7 @@ def get_existing_acqs(start_time, end_time, location=False):
         acq_ids.append(item.get("_id"))
 
     return acq_ids
+
 
 def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=None, password=None,
            version="v2.0", ingest_missing=False, create_only=False, browse=False):
@@ -401,16 +368,15 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     if ingest_missing and not create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
-            manifest = get_manifest(session, info)
-            ingest_acq_dataset(info['ds'], info['met'], manifest, ds_cfg)
+            ingest_acq_dataset(info['ds'], info['met'], ds_cfg)
             logger.info("Created and ingested %s\n" % acq_id)
 
     # just create missing datasets
     if not ingest_missing and create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
-            manifest = get_manifest(session, info)
-            id, ds_dir = create_acq_dataset(info['ds'], info['met'], manifest, browse=browse)
+
+            id, ds_dir = create_acq_dataset(info['ds'], info['met'], browse=browse)
             logger.info("Created %s\n" % acq_id)
 
     # email
