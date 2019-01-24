@@ -109,6 +109,9 @@ def massage_result(res):
     #     res['status'] = "ACQUIRED"
 
     res["source"] = "esa_scihub"
+    track_number = res["trackNumber"]
+    res["track_number"] = track_number
+    del res['trackNumber']
     # extract footprint and save as bbox and geojson polygon
     match = FOOTPRINT_RE.search(res['footprint'])
     if not match:
