@@ -132,11 +132,11 @@ def massage_result(res):
     # verify track
 
     if res['platform'] == "Sentinel-1A":
-       if res['trackNumber'] != (res['orbitNumber']-73)%175+1:
-           logger.info("WARNING: Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
+       if res['track_number'] != (res['orbitNumber']-73)%175+1:
+           logger.info("WARNING: Failed to verify S1A relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('track_number', '')))
     if res['platform'] == "Sentinel-1B":
-       if res['trackNumber'] != (res['orbitNumber']-27)%175+1:
-           logger.info("WARNING: Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('trackNumber', '')))
+       if res['track_number'] != (res['orbitNumber']-27)%175+1:
+           logger.info("WARNING: Failed to verify S1B relative orbit number and track number. Orbit:{}, Track: {}".format(res.get('orbitNumber', ''), res.get('track_number', '')))
     
 
 def get_dataset_json(met, version):
@@ -155,7 +155,7 @@ def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     """Create acquisition dataset. Return tuple of (dataset ID, dataset dir)."""
 
     # create dataset dir
-    id = "acquisition-{}_{}_{}_{}-esa_scihub".format(met["platform"],get_timestamp_for_filename(met["sensingStart"]), met["trackNumber"], met["sensoroperationalmode"])
+    id = "acquisition-{}_{}_{}_{}-esa_scihub".format(met["platform"],get_timestamp_for_filename(met["sensingStart"]), met["track_number"], met["sensoroperationalmode"])
     root_ds_dir = os.path.abspath(root_ds_dir)
     ds_dir = os.path.join(root_ds_dir, id)
     if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0755)
@@ -344,7 +344,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
             else:
                 prods_found.append(met["id"])
 
-            ids_by_track.setdefault(met['trackNumber'], []).append(met['id'])
+            ids_by_track.setdefault(met['track_number'], []).append(met['id'])
 
         # don't clobber the connection
         time.sleep(3)
