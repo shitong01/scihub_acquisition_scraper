@@ -188,8 +188,13 @@ def ingest_acq_dataset(ds, met, ds_cfg, browse=False):
 
     tmp_dir = tempfile.mkdtemp()
     id, ds_dir = create_acq_dataset(ds, met, tmp_dir, browse)
-    ingest(id, ds_cfg, app.conf.GRQ_UPDATE_URL, app.conf.DATASET_PROCESSED_QUEUE, ds_dir, None)
-    shutil.rmtree(tmp_dir)
+
+    try:
+        ingest(id, ds_cfg, app.conf.GRQ_UPDATE_URL, app.conf.DATASET_PROCESSED_QUEUE, ds_dir, None)
+        shutil.rmtree(tmp_dir)
+        return True
+    except Exception:
+        return False
 
 
 @backoff.on_exception(backoff.expo, requests.exceptions.RequestException,
@@ -368,8 +373,11 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     if ingest_missing and not create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
-            ingest_acq_dataset(info['ds'], info['met'], ds_cfg)
-            logger.info("Created and ingested %s\n" % acq_id)
+            if ingest_acq_dataset(info['ds'], info['met'], ds_cfg):
+                logger.info("Created and ingested %s\n" % acq_id)
+            else:
+                logger.info("Failed to create and ingest %s\n" % acq_id)
+
 
     # just create missing datasets
     if not ingest_missing and create_only:

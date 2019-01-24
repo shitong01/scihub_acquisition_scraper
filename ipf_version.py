@@ -26,6 +26,7 @@ _index = "grq_v2.0_acquisition-s1-iw_slc"
 _type = "acquisition-S1-IW_SLC"
 ES = elasticsearch.Elasticsearch(es_url)
 
+
 def check_prod_avail(session, link):
     """
     check if product is currently available or in long time archive
@@ -106,6 +107,8 @@ def extract_asf_ipf(id):
         # download the .iso.xml file, assumes earthdata login credentials are in your .netrc file
         response = requests.get(results[0][0]['downloadUrl'])
         response.raise_for_status()
+        if response.status_code != 200:
+            raise Exception("Request to ASF failed with status {}. {}".format(response.status_code, request_string))
         # parse the xml file to extract the ipf version string
         root = fromstring(response.text.encode('utf-8'))
         ns = {'gmd': 'http://www.isotc211.org/2005/gmd', 'gmi': 'http://www.isotc211.org/2005/gmi',
@@ -146,8 +149,10 @@ def extract_scihub_ipf(met):
     if prod_avail == 200:
         manifest = get_scihub_manifest(session, info)
     elif prod_avail == 202:
+        logger.info("Got 202 from SciHub. Product moved to long term archive.")
         raise Exception("Got 202. Product moved to long term archive.")
     else:
+        logger.info("Got code {} from SciHub".format(prod_avail))
         raise Exception("Got code {}".format(prod_avail))
 
     ipf = get_scihub_ipf(manifest)
@@ -170,6 +175,8 @@ if __name__ == "__main__":
         except Exception:
             with open('_alt_error.txt', 'w') as f:
                 f.write("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
+            with open('_alt_traceback.txt', 'w') as f:
+                f.write("%s\n" % traceback.format_exc())
             raise Exception("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
 
     update_ipf(id, ipf)
