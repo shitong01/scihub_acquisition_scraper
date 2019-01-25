@@ -33,10 +33,6 @@
     {
         "name": "polygon",
         "destination": "positional"
-    },
-    {
-        "name": "create_flag",
-        "destination": "positional"
     }
   ]
 }
