@@ -105,9 +105,33 @@ def massage_result(res):
     res['data_product_name'] = "acquisition-%s" % res['title']
     res['archive_filename'] = "%s.zip" % res['title']
 
-    # if res['status'].upper() == "ARCHIVED":
-    #     res['status'] = "ACQUIRED"
+    try:
+        start_time = datetime.strptime(res["sensingStart"], "%Y-%m-%dT%H:%M:%S.%fZ")
+    except:
+        start_time = datetime.strptime(res["sensingStart"], "%Y-%m-%dT%H:%M:%SZ")
 
+    try:
+        end_time = datetime.strptime(res["sensingStop"], "%Y-%m-%dT%H:%M:%S.%fZ")
+    except:
+        end_time = datetime.strptime(res["sensingStop"], "%Y-%m-%dT%H:%M:%SZ")
+
+    if end_time < start_time:
+        match_pattern = "(?P<spacecraft>S1\w)_IW_SLC__(?P<misc>.*?)_(?P<s_year>\d{4})(?P<s_month>\d{2})(?P<s_day>\d{2})T(?P<s_hour>\d{2})(?P<s_minute>\d{2})(?P<s_seconds>\d{2})_(?P<e_year>\d{4})(?P<e_month>\d{2})(?P<e_day>\d{2})T(?P<e_hour>\d{2})(?P<e_minute>\d{2})(?P<e_seconds>\d{2})(?P<misc2>.*?)$"
+        m = re.match(match_pattern, res['title'])
+        file_starttime = "{}-{}-{}T{}:{}:{}Z".format(m.group("s_year"), m.group("s_month"), m.group("s_day"),
+                                                 m.group("s_hour"), m.group("s_minute"), m.group("s_seconds"))
+        s_time = datetime.strptime(file_starttime, "%Y-%m-%dT%H:%M:%SZ")
+        file_endtime = "{}-{}-{}T{}:{}:{}Z".format(m.group("e_year"), m.group("e_month"), m.group("e_day"),
+                                               m.group("e_hour"), m.group("e_minute"), m.group("e_seconds"))
+        e_time = datetime.strptime(file_endtime, "%Y-%m-%dT%H:%M:%SZ")
+        if s_time < e_time:
+            res["sensingStart"] = file_starttime
+            res["sensingStop"] = file_endtime
+        else:
+            print "Inconsistency in filename too. Aborting correction"
+
+
+    res['status'] = "ACQUIRED"
     res["source"] = "esa_scihub"
     track_number = res["trackNumber"]
     res["track_number"] = track_number
@@ -119,7 +143,7 @@ def massage_result(res):
     polygon = [map(eval, coord.split()) for coord in match.group(1).split(',')]
     res['location'] = {
         "type": "polygon",
-        "coordinates": [ polygon ],
+        "coordinates": [polygon],
     }
     res['bbox'] = [[i[1], i[0]] for i in polygon]
 
@@ -302,7 +326,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     prods_missing = []
     prods_found = []
     while loop:
-        query_params = { "q": query, "rows": 100, "format": "json", "start": offset }
+        query_params = {"q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
         # query_url = url + "&".join(["%s=%s" % (i, query_params[i]) for i in query_params])
         # .replace("(", "%28").replace(")", "%29").replace(" ", "%20")
@@ -381,7 +405,6 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
             else:
                 logger.info("Failed to create and ingest %s\n" % acq_id)
 
-
     # just create missing datasets
     if not ingest_missing and create_only:
         for acq_id in prods_missing:
@@ -394,6 +417,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     # if email_to is not None:
     #     subject = "[check_apihub] %s S1 SLC count" % aoi['data_product_name']
     #     send_email(getpass.getuser(), email_to, [], subject, msg)
+
 
 def convert_geojson(input_geojson):
     '''Attempts to convert the input geojson into a polygon object. Returns the object.'''
