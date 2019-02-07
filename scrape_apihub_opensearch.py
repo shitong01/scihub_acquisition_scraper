@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from tabulate import tabulate
 from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
                                                   InsecurePlatformWarning)
+import dateutil.parser
 import ast
 import shapely.wkt
 from shapely.geometry import Polygon
@@ -105,15 +106,8 @@ def massage_result(res):
     res['data_product_name'] = "acquisition-%s" % res['title']
     res['archive_filename'] = "%s.zip" % res['title']
 
-    try:
-        start_time = datetime.strptime(res["sensingStart"], "%Y-%m-%dT%H:%M:%S.%fZ")
-    except:
-        start_time = datetime.strptime(res["sensingStart"], "%Y-%m-%dT%H:%M:%SZ")
-
-    try:
-        end_time = datetime.strptime(res["sensingStop"], "%Y-%m-%dT%H:%M:%S.%fZ")
-    except:
-        end_time = datetime.strptime(res["sensingStop"], "%Y-%m-%dT%H:%M:%SZ")
+    start_time = dateutil.parser.parse(res["sensingStart"])
+    end_time = dateutil.parser.parse(res["sensingStop"])
 
     if end_time < start_time:
         match_pattern = "(?P<spacecraft>S1\w)_IW_SLC__(?P<misc>.*?)_(?P<s_year>\d{4})(?P<s_month>\d{2})(?P<s_day>\d{2})T(?P<s_hour>\d{2})(?P<s_minute>\d{2})(?P<s_seconds>\d{2})_(?P<e_year>\d{4})(?P<e_month>\d{2})(?P<e_day>\d{2})T(?P<e_hour>\d{2})(?P<e_minute>\d{2})(?P<e_seconds>\d{2})(?P<misc2>.*?)$"
@@ -128,10 +122,9 @@ def massage_result(res):
             res["sensingStart"] = file_starttime
             res["sensingStop"] = file_endtime
         else:
-            print "Inconsistency in filename too. Aborting correction"
+            logger.info("Inconsistency in filename too. Aborting correction. ID: , Start time: {} , "
+                        "End time: {}".format(res['title'], res["sensingStart"], res["sensingStop"] ))
 
-
-    res['status'] = "ACQUIRED"
     res["source"] = "esa_scihub"
     track_number = res["trackNumber"]
     res["track_number"] = track_number
