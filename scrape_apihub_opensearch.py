@@ -67,6 +67,23 @@ def get_timestamp_for_filename(time):
     time = time.replace(":", "")
     return time
 
+
+def get_accurate_times(filename_str, starttime_str, endtime_str):
+    '''
+    Use the seconds from the start/end strings to append to the input filename timestamp to keep accuracy
+
+    filename_str -- input S1_IW_SLC filename string
+    starttime -- starttime string from SciHub metadata
+    endtime -- endtime string from SciHub metadata
+    '''
+    match_pattern = "(?P<spacecraft>S1\w)_IW_SLC__(?P<misc>.*?)_(?P<s_year>\d{4})(?P<s_month>\d{2})(?P<s_day>\d{2})T(?P<s_hour>\d{2})(?P<s_minute>\d{2})(?P<s_seconds>\d{2})_(?P<e_year>\d{4})(?P<e_month>\d{2})(?P<e_day>\d{2})T(?P<e_hour>\d{2})(?P<e_minute>\d{2})(?P<e_seconds>\d{2})(?P<misc2>.*?)$"
+    m = re.match(match_pattern, filename_str)
+    start_microseconds = dateutil.parser.parse(starttime_str).strftime('.%f').rstrip('0').ljust(4, '0') + 'Z' # milliseconds + postfix from metadata
+    end_microseconds = dateutil.parser.parse(endtime_str).strftime('.%f').rstrip('0').ljust(4, '0') + 'Z' # milliseconds + postfix from metadata
+    starttime = "{}-{}-{}T{}:{}:{}{}".format(m.group("s_year"), m.group("s_month"), m.group("s_day"), m.group("s_hour"), m.group("s_minute"), m.group("s_seconds"), start_microseconds)
+    endtime = "{}-{}-{}T{}:{}:{}{}".format(m.group("e_year"), m.group("e_month"), m.group("e_day"), m.group("e_hour"), m.group("e_minute"), m.group("e_seconds"), end_microseconds)
+    return starttime, endtime
+
 def massage_result(res):
     """Massage result JSON into HySDS met json."""
 
@@ -106,24 +123,10 @@ def massage_result(res):
     res['data_product_name'] = "acquisition-%s" % res['title']
     res['archive_filename'] = "%s.zip" % res['title']
 
-    start_time = dateutil.parser.parse(res["sensingStart"])
-    end_time = dateutil.parser.parse(res["sensingStop"])
-
-    if end_time < start_time:
-        match_pattern = "(?P<spacecraft>S1\w)_IW_SLC__(?P<misc>.*?)_(?P<s_year>\d{4})(?P<s_month>\d{2})(?P<s_day>\d{2})T(?P<s_hour>\d{2})(?P<s_minute>\d{2})(?P<s_seconds>\d{2})_(?P<e_year>\d{4})(?P<e_month>\d{2})(?P<e_day>\d{2})T(?P<e_hour>\d{2})(?P<e_minute>\d{2})(?P<e_seconds>\d{2})(?P<misc2>.*?)$"
-        m = re.match(match_pattern, res['title'])
-        file_starttime = "{}-{}-{}T{}:{}:{}Z".format(m.group("s_year"), m.group("s_month"), m.group("s_day"),
-                                                 m.group("s_hour"), m.group("s_minute"), m.group("s_seconds"))
-        s_time = datetime.strptime(file_starttime, "%Y-%m-%dT%H:%M:%SZ")
-        file_endtime = "{}-{}-{}T{}:{}:{}Z".format(m.group("e_year"), m.group("e_month"), m.group("e_day"),
-                                               m.group("e_hour"), m.group("e_minute"), m.group("e_seconds"))
-        e_time = datetime.strptime(file_endtime, "%Y-%m-%dT%H:%M:%SZ")
-        if s_time < e_time:
-            res["sensingStart"] = file_starttime
-            res["sensingStop"] = file_endtime
-        else:
-            logger.info("Inconsistency in filename too. Aborting correction. ID: , Start time: {} , "
-                        "End time: {}".format(res['title'], res["sensingStart"], res["sensingStop"] ))
+    correct_start_time, correct_end_time = get_accurate_times(filename_str=res["title"], starttime_str=res["sensingStart"],
+                                                              endtime_str=res["sensingStop"])
+    res["sensingStart"] = correct_start_time
+    res["sensingStop"] = correct_end_time
 
     res["source"] = "esa_scihub"
     track_number = res["trackNumber"]
