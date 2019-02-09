@@ -33,6 +33,10 @@
     {
         "name": "polygon",
         "destination": "positional"
+    },
+    {
+       "name": "ingest_flag",
+       "destination": "positional"
     }
   ]
 }
