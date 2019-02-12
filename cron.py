@@ -31,7 +31,7 @@ if __name__ == "__main__":
     ds_es_url = args.ds_es_url
     starttime = args.starttime
     endtime = args.endtime
-    job_spec = "job-scrape_apihub-%s:%s" % (qtype, args.tag)
+    job_spec = "job-acquisition_ingest-scihub:{}".format(args.tag)
 
     rtime = datetime.utcnow()
     job_name = "%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     #Setup input arguments here
     rule = {
-        "rule_name": "scrape_apihub-%s" % qtype,
+        "rule_name": "acquistion_ingest-scihub",
         #"queue": "factotum-job_worker-apihub_%s_throttled" % qtype, # job submission queue
         "queue": "factotum-job_worker-apihub_scraper_throttled",
         "priority": 0,
