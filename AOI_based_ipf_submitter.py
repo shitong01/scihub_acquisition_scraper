@@ -8,7 +8,7 @@ from hysds_commons.job_utils import submit_mozart_job
 BASE_PATH = os.path.dirname(__file__)
 
 es_url = app.conf["GRQ_ES_URL"]
-_index = "grq"
+_index = "grq_v3.0_area_of_interest"
 _type = "area_of_interest"
 ES = elasticsearch.Elasticsearch(es_url)
 
@@ -31,8 +31,7 @@ def get_non_ipf_acquisitions(location, start_time, end_time):
     :param end_time:
     :return:
     """
-    index = "grq_2.0_acquisition-s1-iw_slc"
-    type = "acquisition-S1-IW_SLC"
+    index = "grq_v2.0_acquisition-s1-iw_slc"
     query = {
         "query": {
             "filtered": {
@@ -95,7 +94,7 @@ def get_non_ipf_acquisitions(location, start_time, end_time):
 
 
 def submit_ipf_scraper(acq):
-    params = {
+    params = [
         {
             "name": "acq_id",
             "from": "value",
@@ -111,7 +110,7 @@ def submit_ipf_scraper(acq):
             "from": "value",
             "value": "datasets.json"
         }
-    }
+    ]
 
     rule = {
         "rule_name": "acq_ipf_scraper",

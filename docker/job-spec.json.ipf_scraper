@@ -7,8 +7,8 @@
     "factotum-job_worker-apihub_scraper_throttled"
   ],
   "disk_usage":"10GB",
-  "soft_time_limit": 3300,
-  "time_limit": 3600,
+  "soft_time_limit": 480,
+  "time_limit": 960,
   "params" : [
     {
         "name": "acq_id",

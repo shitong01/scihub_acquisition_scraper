@@ -459,7 +459,6 @@ def convert_to_wkt(input_obj):
     return shapely.wkt.dumps(convert_geojson(input_obj))
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("ds_es_url", help="ElasticSearch URL for acquisition dataset, e.g. " +
