@@ -97,7 +97,7 @@ def submit_aoi_ipf(aoi):
     rule = {
         "rule_name": "{}_ipf_scraper".format(aoi.get("id")),
         "queue": "factotum-job_worker-apihub_scraper_throttled",
-        "priority": '6',
+        "priority": '4',
         "kwargs": '{}'
     }
 
@@ -105,7 +105,7 @@ def submit_aoi_ipf(aoi):
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
                                                          "job-specification": "job-AOI_based_ipf_submitter:master"},
-                                      job_name='job-%s-%s-%s' % ("aoi_ipf_submitter", aoi.get("_id"), "master"),
+                                      job_name='job-%s-%s-%s' % ("aoi_ipf_submitter", aoi.get("id"), "master"),
                                       enable_dedup=False)
     print("For {} , AOI IPF Submitter Job ID: {}".format(aoi.get("_id"), mozart_job_id))
 

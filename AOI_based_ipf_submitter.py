@@ -98,12 +98,12 @@ def submit_ipf_scraper(acq):
         {
             "name": "acq_id",
             "from": "value",
-            "value": acq.get("_id")
+            "value": acq.get("id")
         },
         {
             "name": "acq_met",
             "from": "value",
-            "value": acq.get("_source").get("metadata")
+            "value": acq.get("metadata")
         },
         {
             "name": "ds_cfg",
