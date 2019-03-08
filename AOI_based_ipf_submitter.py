@@ -13,15 +13,6 @@ _type = "area_of_interest"
 ES = elasticsearch.Elasticsearch(es_url)
 
 
-def get_AOI(aoi_name):
-    """
-    Get the AOI record from ES
-    :param aoi_name:
-    :return:
-    """
-    return ES.get(index=_index, doc_type=_type, id=AOI_name)
-
-
 def get_non_ipf_acquisitions(location, start_time, end_time):
     """
     This function would query for all the acquisitions that
@@ -135,7 +126,6 @@ if __name__ == "__main__":
     jobs for each acquisition.
     """
     ctx = json.loads(open("_context.json", "r").read())
-    AOI_name = ctx.get("AOI_name")
     location = ctx.get("spatial_extent")
     start_time = ctx.get("start_time")
     end_time = ctx.get("end_time")
