@@ -36,7 +36,7 @@ def check_prod_avail(session, link):
     """
 
     product_url = "{}$value".format(link)
-    response = session.get(product_url, verify=False)
+    response = session.get(product_url, verify=False, timeout=180)
     return response.status_code
 
 
@@ -51,7 +51,7 @@ def get_scihub_manifest(session, info):
                                                                              info['met']['filename'])
     manifest_url2 = manifest_url.replace('/apihub/', '/dhus/')
     for url in (manifest_url2, manifest_url):
-        response = session.get(url, verify=False)
+        response = session.get(url, verify=False, timeout=180)
         logger.info("url: %s" % response.url)
         if response.status_code == 200:
             break
