@@ -15,6 +15,9 @@ from tabulate import tabulate
 from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
                                                   InsecurePlatformWarning)
 
+import shapely.wkt
+import geojson
+
 import hysds.orchestrator
 from hysds.celery import app
 from hysds.dataset_ingest import ingest
@@ -58,7 +61,6 @@ QUERY_TEMPLATE = "IngestionDate ge datetime'{0}' and IngestionDate lt datetime'{
 #QUERY_TEMPLATE = "substringof('IW_SLC',Name) and substringof('20170409T',Name)"
 
 # regexes
-FOOTPRINT_RE = re.compile(r'POLYGON\s*\(\((.*)\)\)')
 PLATFORM_RE = re.compile(r'S1(.+?)_')
 
 
@@ -102,15 +104,9 @@ def massage_result(res):
     res['archive_filename'] = "%s.zip" % res['title']
 
     # extract footprint and save as bbox and geojson polygon
-    match = FOOTPRINT_RE.search(res['footprint'])
-    if not match:
-        raise RuntimeError("Failed to extract footprint info: %s" % res['footprint'])
-    polygon = [map(eval, coord.split()) for coord in match.group(1).split(',')]
-    res['location'] = {
-        "type": "polygon",
-        "coordinates": [ polygon ],
-    }
-    res['bbox'] = [[i[1], i[0]] for i in polygon]
+    g = shapely.wkt.loads(res['footprint'])
+    res['location'] = geojson.Feature(geometry=g, properties={}).geometry
+    res['bbox'] = geojson.Feature(geometry=g.envelope, properties={}).geometry
 
     # set platform
     match = PLATFORM_RE.search(res['title'])
