@@ -149,7 +149,7 @@ def massage_result(res):
     # extract footprint and save as bbox and geojson polygon
     g = shapely.wkt.loads(res['footprint'])
     res['location'] = geojson.Feature(geometry=g, properties={}).geometry
-    res['bbox'] = geojson.Feature(geometry=g.envelope, properties={}).geometry
+    res['bbox'] = geojson.Feature(geometry=g.envelope, properties={}).geometry.coordinates[0]
 
     # set platform
     match = PLATFORM_RE.search(res['title'])
