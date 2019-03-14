@@ -15,6 +15,7 @@ import dateutil.parser
 import ast
 import shapely.wkt
 from shapely.geometry import Polygon
+import geojson
 
 import hysds.orchestrator
 from hysds.celery import app
@@ -58,7 +59,6 @@ QUERY_TEMPLATE = 'IW AND producttype:SLC AND platformname:Sentinel-1 AND ' + \
                  #'( footprint:"Intersects(POLYGON(({2})))")'
 
 # regexes
-FOOTPRINT_RE = re.compile(r'POLYGON\s*\(\((.*)\)\)')
 PLATFORM_RE = re.compile(r'S1(.+?)_')
 
 
@@ -147,15 +147,9 @@ def massage_result(res):
     res["track_number"] = track_number
     del res['trackNumber']
     # extract footprint and save as bbox and geojson polygon
-    match = FOOTPRINT_RE.search(res['footprint'])
-    if not match:
-        raise RuntimeError("Failed to extract footprint info: %s" % res['footprint'])
-    polygon = [map(eval, coord.split()) for coord in match.group(1).split(',')]
-    res['location'] = {
-        "type": "polygon",
-        "coordinates": [polygon],
-    }
-    res['bbox'] = [[i[1], i[0]] for i in polygon]
+    g = shapely.wkt.loads(res['footprint'])
+    res['location'] = geojson.Feature(geometry=g, properties={}).geometry
+    res['bbox'] = geojson.Feature(geometry=g.envelope, properties={}).geometry.coordinates[0]
 
     # set platform
     match = PLATFORM_RE.search(res['title'])
