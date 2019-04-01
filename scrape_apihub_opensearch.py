@@ -14,7 +14,7 @@ from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
 import dateutil.parser
 import ast
 import shapely.wkt
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPolygon
 import geojson
 
 import hysds.orchestrator
@@ -440,10 +440,10 @@ def convert_geojson(input_geojson):
     try:
         # if it's a full geojson
         if d is False and 'coordinates' in input_geojson.keys():
-            polygon = Polygon(input_geojson['coordinates'][0])
+            polygon = MultiPolygon([Polygon(input_geojson['coordinates'][0])])
             return polygon
         else: # it's a list of coordinates
-            polygon = Polygon(input_geojson)
+            polygon = MultiPolygon([Polygon(input_geojson)])
             return polygon
     except:
         raise Exception('unable to parse geojson: {0}'.format(input_geojson))
