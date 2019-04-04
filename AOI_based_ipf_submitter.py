@@ -160,9 +160,11 @@ if __name__ == "__main__":
     acqs_list = get_non_ipf_acquisitions(location, start_time, end_time)
 
     for acq in acqs_list:
-        acq_date = acq.get("starttime")
+        print(json.dumps(acq))
+        print("Date:" + acq.get("metadata").get("sensingStart"))
+        acq_date = acq.get("metadata").get("sensingStart")
         start_time = dateutil.parser.parse(acq_date)
-        if start_time < datetime.now() - timedelta(days=1):
+        if start_time.replace(tzinfo=None) < datetime.now() - timedelta(days=1):
             endpoint = "asf"
         else:
             endpoint = "scihub"
