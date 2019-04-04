@@ -103,7 +103,7 @@ def extract_asf_ipf(id):
         response = requests.get(request_string)
         response.raise_for_status()
         results = json.loads(response.text)
-        logger.debug("Response from ASF: {}".format(response.text))
+        logger.info("Response from ASF: {}".format(response.text))
         # download the .iso.xml file, assumes earthdata login credentials are in your .netrc file
         response = requests.get(results[0][0]['downloadUrl'])
         response.raise_for_status()
@@ -166,17 +166,25 @@ if __name__ == "__main__":
     ctx = json.loads(open("_context.json","r").read())
     id = ctx["acq_id"]
     met = ctx["acq_met"]
+    endpoint = ctx["endpoint"]
 
-    try:
-        ipf = extract_asf_ipf(met.get("identifier"))
-    except Exception:
+    if endpoint == "asf":
+        try:
+            ipf = extract_asf_ipf(met.get("identifier"))
+        except Exception:
+                with open('_alt_error.txt', 'w') as f:
+                    f.write("Failed to extract IPF version from ASF for {}".format(id))
+                with open('_alt_traceback.txt', 'w') as f:
+                    f.write("%s\n" % traceback.format_exc())
+                raise Exception("Failed to extract IPF version from ASF for {}".format(id))
+    else:
         try:
             ipf = extract_scihub_ipf(met)
         except Exception:
             with open('_alt_error.txt', 'w') as f:
-                f.write("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
+                f.write("Failed to extract IPF version from SciHub for {}".format(id))
             with open('_alt_traceback.txt', 'w') as f:
                 f.write("%s\n" % traceback.format_exc())
-            raise Exception("Failed to extract IPF version from both ASF and SciHub for {}".format(id))
+            raise Exception("Failed to extract IPF version from SciHub for {}".format(id))
 
     update_ipf(id, ipf)

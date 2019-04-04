@@ -1,6 +1,6 @@
 {
   "submission_type":"iteration",
-  "label": "IPF Scraper for given acquisition",
+  "label": "IPF ASF Scraper for given acquisition",
   "params" : [
     {
         "name": "acq_id",
@@ -9,6 +9,11 @@
     {
         "name": "acq_met",
         "from": "dataset_jpath:_source.metadata"
+    },
+    {
+        "name": "endpoint",
+        "from": "value",
+        "value": "asf"
     },
     {
         "name": "ds_cfg",

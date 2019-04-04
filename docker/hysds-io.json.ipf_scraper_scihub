@@ -1,0 +1,24 @@
+{
+  "submission_type":"iteration",
+  "label": "IPF SciHub Scraper for given acquisition",
+  "params" : [
+    {
+        "name": "acq_id",
+        "from": "dataset_jpath:_id"
+    },
+    {
+        "name": "acq_met",
+        "from": "dataset_jpath:_source.metadata"
+    },
+    {
+        "name": "endpoint",
+        "from": "value",
+        "value": "scihub"
+    },
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    }
+  ]
+}
