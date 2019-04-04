@@ -84,7 +84,7 @@ def get_non_ipf_acquisitions(location, start_time, end_time):
     return acq_list
 
 
-def submit_ipf_scraper(acq):
+def submit_ipf_scraper(acq, tag):
     params = [
         {
             "name": "acq_id",
@@ -113,9 +113,8 @@ def submit_ipf_scraper(acq):
     print('submitting jobs with params:')
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
-                                                         "job-specification": "job-ipf_scraper:master"},
-                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("id"), "master"),
-                                      enable_dedup=False)
+                                                         "job-specification": "job-ipf_scraper:{}".format(tag)},
+                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("id"), tag))
     print("For {} , IPF scrapper Job ID: {}".format(acq.get("id"), mozart_job_id))
 
 
@@ -129,6 +128,7 @@ if __name__ == "__main__":
     location = ctx.get("spatial_extent")
     start_time = ctx.get("start_time")
     end_time = ctx.get("end_time")
+    tag = ctx.get("container_specification").get("version")
     acqs_list = get_non_ipf_acquisitions(location, start_time, end_time)
     for acq in acqs_list:
-        submit_ipf_scraper(acq)
+        submit_ipf_scraper(acq, tag)
