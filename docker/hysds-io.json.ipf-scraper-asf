@@ -11,6 +11,14 @@
         "from": "dataset_jpath:_source.metadata"
     },
     {
+        "name": "index",
+        "from": "dataset_jpath:_index"
+    },
+    {
+        "name": "dataset_type",
+        "from": "dataset_jpath:_type"
+    },
+    {
         "name": "endpoint",
         "from": "value",
         "value": "asf"

@@ -19,6 +19,14 @@
         "destination": "context"
     },
     {
+        "name": "index",
+        "destination": "context"
+    },
+    {
+        "name": "dataset_type",
+        "destination": "context"
+    },
+    {
         "name": "endpoint",
         "destination": "context"
 

@@ -22,8 +22,8 @@ logger.setLevel(logging.INFO)
 logger.addFilter(LogFilter())
 
 es_url = app.conf["GRQ_ES_URL"]
-_index = "grq_v2.0_acquisition-s1-iw_slc"
-_type = "acquisition-S1-IW_SLC"
+_index = None
+_type = None
 ES = elasticsearch.Elasticsearch(es_url)
 
 
@@ -166,6 +166,8 @@ if __name__ == "__main__":
     ctx = json.loads(open("_context.json","r").read())
     id = ctx["acq_id"]
     met = ctx["acq_met"]
+    _index = ctx.get("index")
+    _type = ctx.get("dataset_type")
     endpoint = ctx["endpoint"]
 
     if endpoint == "asf":

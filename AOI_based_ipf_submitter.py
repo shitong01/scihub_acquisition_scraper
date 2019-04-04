@@ -1,6 +1,8 @@
 import json
 import os
 import requests
+import dateutil.parser
+from datetime import datetime, timedelta
 import elasticsearch
 from hysds.celery import app
 from hysds_commons.job_utils import submit_mozart_job
@@ -8,9 +10,17 @@ from hysds_commons.job_utils import submit_mozart_job
 BASE_PATH = os.path.dirname(__file__)
 
 es_url = app.conf["GRQ_ES_URL"]
-_index = "grq_v3.0_area_of_interest"
-_type = "area_of_interest"
 ES = elasticsearch.Elasticsearch(es_url)
+
+job_types = {
+    "asf": "job-ipf-scraper-asf",
+    "scihub": "job-ipf-scraper-scihub"
+}
+
+job_queues = {
+    "asf": "ipf-scraper-asf",
+    "scihub": "ipf-scraper-scihub"
+}
 
 
 def get_non_ipf_acquisitions(location, start_time, end_time):
@@ -84,7 +94,7 @@ def get_non_ipf_acquisitions(location, start_time, end_time):
     return acq_list
 
 
-def submit_ipf_scraper(acq, tag):
+def submit_ipf_scraper(acq, tag, endpoint):
     params = [
         {
             "name": "acq_id",
@@ -97,6 +107,21 @@ def submit_ipf_scraper(acq, tag):
             "value": acq.get("metadata")
         },
         {
+            "name": "index",
+            "from": "value",
+            "value": "grq_v2.0_acquisition-s1-iw_slc"
+        },
+        {
+            "name": "dataset_type",
+            "from": "value",
+            "value": "acquisition-S1-IW_SLC"
+        },
+        {
+            "name": "endpoint",
+            "from": "value",
+            "value": endpoint
+        },
+        {
             "name": "ds_cfg",
             "from": "value",
             "value": "datasets.json"
@@ -104,17 +129,19 @@ def submit_ipf_scraper(acq, tag):
     ]
 
     rule = {
-        "rule_name": "acq_ipf_scraper",
-        "queue": "factotum-job_worker-apihub_scraper_throttled",
+        "rule_name": "ipf_scraper_{}".format(endpoint),
+        "queue": job_queues.get(endpoint),
         "priority": '5',
         "kwargs": '{}'
     }
 
+    # based on the
+
     print('submitting jobs with params:')
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
-                                                         "job-specification": "job-ipf_scraper:{}".format(tag)},
-                                      job_name='job-%s-%s-%s' % ("ipf_scraper", acq.get("id"), tag))
+                                                         "job-specification": "{}:{}".format(job_types.get(endpoint),tag)},
+                                      job_name='%s-%s-%s' % (job_types.get(endpoint), acq.get("id"), tag))
     print("For {} , IPF scrapper Job ID: {}".format(acq.get("id"), mozart_job_id))
 
 
@@ -124,11 +151,19 @@ if __name__ == "__main__":
     overlapping with a specific AOI. It will then submit IPF scraper
     jobs for each acquisition.
     """
+
     ctx = json.loads(open("_context.json", "r").read())
     location = ctx.get("spatial_extent")
     start_time = ctx.get("start_time")
     end_time = ctx.get("end_time")
     tag = ctx.get("container_specification").get("version")
     acqs_list = get_non_ipf_acquisitions(location, start_time, end_time)
+
     for acq in acqs_list:
-        submit_ipf_scraper(acq, tag)
+        acq_date = acq.get("starttime")
+        start_time = dateutil.parser.parse(acq_date)
+        if start_time < datetime.now() - timedelta(days=1):
+            endpoint = "asf"
+        else:
+            endpoint = "scihub"
+        submit_ipf_scraper(acq, tag, endpoint)
