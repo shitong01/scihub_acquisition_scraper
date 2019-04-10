@@ -399,7 +399,7 @@ def scrape_asf(start_time, end_time):
             # changing datetimes to have 3 digits of ms
             if len(st) - st_ms_pos > 3:
                 result["startTime"] = st[:st_ms_pos + 3]
-            if len(et)  - et_ms_pos > 3:
+            if len(et) - et_ms_pos > 3:
                 result["stopTime"] = et[:et_ms_pos + 3]
 
             create_dataset_from_asf(result)
