@@ -27,6 +27,16 @@ _type = None
 ES = elasticsearch.Elasticsearch(es_url)
 
 
+def check_ipf_avail(id):
+    result = ES.search(index="grq",body={"query": {"term": {"_id": id}}})
+    ipf_version = result.get("hits").get("hits")[0].get("_source").get("metadata").get("processing_version", None)
+
+    if ipf_version is not None:
+        return True
+    else:
+        return False
+
+
 def check_prod_avail(session, link):
     """
     check if product is currently available or in long time archive
@@ -170,9 +180,14 @@ if __name__ == "__main__":
     _type = ctx.get("dataset_type")
     endpoint = ctx["endpoint"]
 
+    if check_ipf_avail(id):
+        logger.info("Acquisition already has IPF, not processing with scraping")
+    
     if endpoint == "asf":
         try:
             ipf = extract_asf_ipf(met.get("identifier"))
+            if ipf is None:
+                raise Exception
         except Exception:
                 with open('_alt_error.txt', 'w') as f:
                     f.write("Failed to extract IPF version from ASF for {}".format(id))
@@ -182,6 +197,8 @@ if __name__ == "__main__":
     else:
         try:
             ipf = extract_scihub_ipf(met)
+            if ipf is None:
+                raise Exception
         except Exception:
             with open('_alt_error.txt', 'w') as f:
                 f.write("Failed to extract IPF version from SciHub for {}".format(id))
