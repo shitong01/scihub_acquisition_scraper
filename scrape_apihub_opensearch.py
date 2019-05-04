@@ -98,6 +98,7 @@ def get_accurate_times(filename_str, starttime_str, endtime_str):
     endtime = "{}-{}-{}T{}:{}:{}{}".format(m.group("e_year"), m.group("e_month"), m.group("e_day"), m.group("e_hour"), m.group("e_minute"), m.group("e_seconds"), end_microseconds)
     return starttime, endtime
 
+
 def massage_result(res):
     """Massage result JSON into HySDS met json."""
 
@@ -253,12 +254,22 @@ def get_existing_acqs(start_time, end_time, location=False):
                     "bool": {
                         "must": [
                             {
-                                "range": {
-                                    "metadata.sensingStart": {
-                                        "to": end_time,
-                                        "from": start_time
+                                "range":
+                                    {
+                                        "endtime":
+                                            {
+                                                "from": start_time
+                                            }
                                     }
-                                }
+                            },
+                            {
+                                "range":
+                                    {
+                                        "starttime":
+                                            {
+                                                "to": end_time
+                                            }
+                                    }
                             }
                         ]
                     }
@@ -300,7 +311,7 @@ def get_existing_acqs(start_time, end_time, location=False):
         hits.extend(res['hits']['hits'])
 
     for item in hits:
-        acq_ids.append(item.get("_id"))
+        acq_ids.append(item.get("_source").get("metadata").get("id"))
 
     return acq_ids
 
@@ -366,7 +377,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
                 'ds': ds,
             }
 
-            #check if exists
+            # check if exists
             if met["id"] not in existing_acqs:
                 prods_missing.append(met["id"])
             else:
@@ -433,8 +444,8 @@ def convert_geojson(input_geojson):
                 input_geojson = ast.literal_eval(input_geojson)
             except:
                 raise Exception('unable to parse input geojson string: {0}'.format(input_geojson))
-    #attempt to parse the coordinates to ensure a valid geojson
-    #print('input_geojson: {}'.format(input_geojson))
+    # attempt to parse the coordinates to ensure a valid geojson
+    # print('input_geojson: {}'.format(input_geojson))
     depth = lambda L: isinstance(L, list) and max(map(depth, L))+1
     d = depth(input_geojson)
     try:
@@ -447,6 +458,7 @@ def convert_geojson(input_geojson):
             return polygon
     except:
         raise Exception('unable to parse geojson: {0}'.format(input_geojson))
+
 
 def convert_to_wkt(input_obj):
     '''converts a polygon object from shapely into a wkt string for querying'''
