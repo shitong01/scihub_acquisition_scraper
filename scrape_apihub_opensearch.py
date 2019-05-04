@@ -58,6 +58,10 @@ QUERY_TEMPLATE = 'IW AND producttype:SLC AND platformname:Sentinel-1 AND ' + \
                  #'ingestiondate:[{0} TO {1}] ' + \
                  #'( footprint:"Intersects(POLYGON(({2})))")'
 
+VALIDATE_QUERY_TEMPLATE = 'IW AND producttype:SLC AND platformname:Sentinel-1 AND ' + \
+                          'beginposition:[{0} TO {1}]'
+
+
 # regexes
 PLATFORM_RE = re.compile(r'S1(.+?)_')
 
@@ -317,7 +321,7 @@ def get_existing_acqs(start_time, end_time, location=False):
 
 
 def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=None, password=None,
-           version="v2.0", ingest_missing=False, create_only=False, browse=False):
+           version="v2.0", ingest_missing=False, create_only=False, browse=False, purpose="scrape"):
     """Query ApiHub (OpenSearch) for S1 SLC scenes and generate acquisition datasets."""
 
     # get session
@@ -325,7 +329,11 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     if None not in (user, password): session.auth = (user, password)
 
     # set query
-    query = QUERY_TEMPLATE.format(starttime, endtime)
+    if purpose == "scrape":
+        query = QUERY_TEMPLATE.format(starttime, endtime)
+    elif purpose == "validate":
+        query = VALIDATE_QUERY_TEMPLATE.format(starttime, endtime)
+
     if polygon:
         query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
         existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=json.loads(polygon))
@@ -488,11 +496,12 @@ if __name__ == "__main__":
                        action='store_true')
     group.add_argument("--create_only", help="only create missing datasets",
                        action='store_true')
+    parser.add_argument("--purpose", help="scrape or validate", default="scrape", required=False)
     args = parser.parse_args()
     try:
         scrape(args.ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
                args.email, args.polygon, args.user, args.password, args.dataset_version,
-               args.ingest, args.create_only, args.browse)
+               args.ingest, args.create_only, args.browse, args.purpose)
     except Exception as e:
         with open('_alt_error.txt', 'a') as f:
             f.write("%s\n" % str(e))

@@ -37,6 +37,14 @@
     {
        "name": "ingest_flag",
        "destination": "positional"
+    },
+    {
+      "name": "purpose_flag",
+      "destination": "positional"
+    },
+    {
+      "name": "purpose",
+      "destination": "positional"
     }
   ]
 }
