@@ -5,6 +5,7 @@ import requests
 import logging
 import elasticsearch
 import traceback
+import sys
 from hysds.celery import app
 
 log_format = "[%(asctime)s: %(levelname)s/%(funcName)s] %(message)s"
@@ -181,7 +182,10 @@ if __name__ == "__main__":
     endpoint = ctx["endpoint"]
 
     if check_ipf_avail(id):
-        logger.info("Acquisition already has IPF, not processing with scraping")
+        logger.error("Acquisition already has IPF, not processing with scraping")
+        with open('_alt_error.txt', 'w') as f:
+            f.write("Acquisition already has IPF, not processing with scraping for {}".format(id))
+        sys.exit(1)
     
     if endpoint == "asf":
         try:
