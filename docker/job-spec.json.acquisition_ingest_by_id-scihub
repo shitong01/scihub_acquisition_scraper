@@ -1,0 +1,30 @@
+{
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_acquisition_opensearch.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "required-queues": [
+    "factotum-job_worker-apihub_scraper_throttled"
+  ],
+  "disk_usage":"10GB",
+  "soft_time_limit": 3300,
+  "time_limit": 3600,
+  "params" : [
+    {
+        "name": "es_dataset_url",
+        "destination": "positional"
+    },
+    {
+        "name": "ds_cfg",
+        "destination": "positional"
+    },
+    {
+        "name": "slc_id",
+        "destination": "context"
+    },
+    {
+        "name": "ingest_flag",
+        "destination": "positional"
+    }
+  ]
+}

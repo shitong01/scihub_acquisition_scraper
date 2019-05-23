@@ -1,0 +1,24 @@
+{
+  "label": "Ingest acquisition from Scihub using SLC ID",
+  "submission_type":"individual",
+  "params" : [
+    {
+        "name": "es_dataset_url",
+        "from": "submitter"
+    },
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    },
+    {
+        "name": "slc_id",
+        "from": "submitter"
+    },
+    {
+        "name": "ingest_flag",
+        "from": "value",
+        "value": "--ingest"
+    }
+  ]
+}

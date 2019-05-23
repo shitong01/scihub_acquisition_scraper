@@ -1,0 +1,22 @@
+{
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_asf.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "recommended-queues": [
+    "factotum-job_worker-apihub_scraper_throttled"
+  ],
+  "disk_usage":"10GB",
+  "soft_time_limit": 3300,
+  "time_limit": 3600,
+  "params" : [
+    {
+        "name": "starttime",
+        "destination": "context"
+    },
+    {
+        "name": "endtime",
+       "destination": "context"
+    }
+  ]
+}

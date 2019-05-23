@@ -1,0 +1,14 @@
+{
+  "label": "Ingest acquisitions from ASF",
+  "submission_type":"individual",
+  "params" : [
+    {
+        "name": "starttime",
+        "from": "submitter"
+    },
+    {
+        "name": "endtime",
+        "from": "submitter"
+    }
+  ]
+}

@@ -33,6 +33,16 @@
         "name": "ingest_flag",
         "from": "value",
         "value": "--ingest"
+    },
+    {
+      "name": "purpose_flag",
+      "from": "value",
+      "value": "--purpose"
+    },
+    {
+      "name": "purpose",
+      "from": "value",
+      "value": "validate"
     }
   ]
 }

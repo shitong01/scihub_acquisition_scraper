@@ -1,0 +1,39 @@
+{
+  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/ipf_version.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "recommended-queues": [
+    "ipf-scraper-scihub"
+  ],
+  "disk_usage":"10GB",
+  "soft_time_limit": 480,
+  "time_limit": 960,
+  "params" : [
+    {
+        "name": "acq_id",
+        "destination": "context"
+    },
+    {
+        "name": "acq_met",
+        "destination": "context"
+    },
+    {
+        "name": "index",
+        "destination": "context"
+    },
+    {
+        "name": "dataset_type",
+        "destination": "context"
+    },
+    {
+        "name": "endpoint",
+        "destination": "context"
+
+    },
+    {
+        "name": "ds_cfg",
+        "destination": "positional"
+    }
+  ]
+}

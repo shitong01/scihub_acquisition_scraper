@@ -3,8 +3,8 @@
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },
-  "required-queues": [
-    "factotum-job_worker-apihub_scraper_throttled"
+  "recommended-queues": [
+    "ipf-scraper-asf"
   ],
   "disk_usage":"10GB",
   "soft_time_limit": 480,
@@ -17,6 +17,19 @@
     {
         "name": "acq_met",
         "destination": "context"
+    },
+    {
+        "name": "index",
+        "destination": "context"
+    },
+    {
+        "name": "dataset_type",
+        "destination": "context"
+    },
+    {
+        "name": "endpoint",
+        "destination": "context"
+
     },
     {
         "name": "ds_cfg",
