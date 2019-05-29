@@ -44,7 +44,7 @@ if __name__ == "__main__":
         "rule_name": "acquistion_ingest-scihub",
         #"queue": "factotum-job_worker-apihub_%s_throttled" % qtype, # job submission queue
         "queue": "factotum-job_worker-apihub_scraper_throttled",
-        "priority": 0,
+        "priority": 5,
         "kwargs":'{}'
     }
     params = [
