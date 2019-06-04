@@ -185,6 +185,7 @@ if __name__ == "__main__":
         logger.error("Acquisition already has IPF, not processing with scraping")
         with open('_alt_error.txt', 'w') as f:
             f.write("Acquisition already has IPF, not processing with scraping for {}".format(id))
+            f.close()
         sys.exit(1)
     
     if endpoint == "asf":

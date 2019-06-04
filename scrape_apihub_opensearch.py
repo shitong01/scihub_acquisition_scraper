@@ -17,7 +17,6 @@ import shapely.wkt
 from shapely.geometry import Polygon, MultiPolygon
 import geojson
 
-import hysds.orchestrator
 from hysds.celery import app
 from hysds.dataset_ingest import ingest
 from osaka.main import get
@@ -55,11 +54,11 @@ download_url = "https://scihub.copernicus.eu/apihub/odata/v1/Products('{}')/$val
 dtreg = re.compile(r'S1\w_.+?_(\d{4})(\d{2})(\d{2})T.*')
 QUERY_TEMPLATE = 'IW AND producttype:SLC AND platformname:Sentinel-1 AND ' + \
                  'ingestiondate:[{0} TO {1}]'
-                 #'ingestiondate:[{0} TO {1}] ' + \
-                 #'( footprint:"Intersects(POLYGON(({2})))")'
 
 VALIDATE_QUERY_TEMPLATE = 'IW AND producttype:SLC AND platformname:Sentinel-1 AND ' + \
                           'beginposition:[{0} TO {1}]'
+
+AOI_BASED_QUERY_TEMPLATE = VALIDATE_QUERY_TEMPLATE
 
 
 # regexes
@@ -102,6 +101,26 @@ def get_accurate_times(filename_str, starttime_str, endtime_str):
     endtime = "{}-{}-{}T{}:{}:{}{}".format(m.group("e_year"), m.group("e_month"), m.group("e_day"), m.group("e_hour"), m.group("e_minute"), m.group("e_seconds"), end_microseconds)
     return starttime, endtime
 
+
+def list_status(starttime, endtime, prods_count, prods_missing, ids_by_track, ds_es_url):
+    # print number of products missing
+    msg = "Global data availability for %s through %s:\n" % (starttime, endtime)
+    table_stats = [["total on apihub", prods_count],
+                   ["missing products", len(prods_missing)],
+                   ]
+    msg += tabulate(table_stats, tablefmt="grid")
+
+    # print counts by track
+    msg += "\n\nApiHub (OpenSearch) product count by track:\n"
+    msg += tabulate([(i, len(ids_by_track[i])) for i in ids_by_track], tablefmt="grid")
+
+    # print missing products
+    msg += "\n\nMissing products:\n"
+    msg += tabulate([("missing", i) for i in sorted(prods_missing)], tablefmt="grid")
+    msg += "\nMissing %d in %s out of %d in ApiHub (OpenSearch)\n\n" % (len(prods_missing),
+                                                                        ds_es_url,
+                                                                        prods_count)
+    logger.info(msg)
 
 def massage_result(res):
     """Massage result JSON into HySDS met json."""
@@ -320,7 +339,7 @@ def get_existing_acqs(start_time, end_time, location=False):
     return acq_ids
 
 
-def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=None, password=None,
+def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, password=None,
            version="v2.0", ingest_missing=False, create_only=False, browse=False, purpose="scrape"):
     """Query ApiHub (OpenSearch) for S1 SLC scenes and generate acquisition datasets."""
 
@@ -333,6 +352,8 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
         query = QUERY_TEMPLATE.format(starttime, endtime)
     elif purpose == "validate":
         query = VALIDATE_QUERY_TEMPLATE.format(starttime, endtime)
+    elif purpose == "aoi_scrape":
+        query = AOI_BASED_QUERY_TEMPLATE.format(starttime,endtime)
 
     if polygon:
         query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
@@ -351,9 +372,6 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
     while loop:
         query_params = {"q": query, "rows": 100, "format": "json", "start": offset }
         logger.info("query: %s" % json.dumps(query_params, indent=2))
-        # query_url = url + "&".join(["%s=%s" % (i, query_params[i]) for i in query_params])
-        # .replace("(", "%28").replace(")", "%29").replace(" ", "%20")
-        # logger.info("query_url: %s" % query_url)
         response = session.get(url, params=query_params, verify=False)
         logger.info("query_url: %s" % response.url)
         if response.status_code != 200:
@@ -396,24 +414,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
         # don't clobber the connection
         time.sleep(3)
 
-    # print number of products missing
-    msg = "Global data availability for %s through %s:\n" % (starttime, endtime)
-    table_stats = [["total on apihub", len(prods_all)],
-                   ["missing products", len(prods_missing)],
-                  ]
-    msg += tabulate(table_stats, tablefmt="grid")
-
-    # print counts by track
-    msg += "\n\nApiHub (OpenSearch) product count by track:\n"
-    msg += tabulate([(i, len(ids_by_track[i])) for i in ids_by_track], tablefmt="grid")
-
-    # print missing products
-    msg += "\n\nMissing products:\n"
-    msg += tabulate([("missing", i) for i in sorted(prods_missing)], tablefmt="grid")
-    msg += "\nMissing %d in %s out of %d in ApiHub (OpenSearch)\n\n" % (len(prods_missing),
-                                                           ds_es_url,
-                                                           len(prods_all))
-    logger.info(msg)
+    list_status(starttime, endtime, len(prods_all), prods_missing, ids_by_track, ds_es_url)
 
     # error check options
     if ingest_missing and create_only:
@@ -435,11 +436,6 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, polygon=False, user=
 
             id, ds_dir = create_acq_dataset(info['ds'], info['met'], browse=browse)
             logger.info("Created %s\n" % acq_id)
-
-    # email
-    # if email_to is not None:
-    #     subject = "[check_apihub] %s S1 SLC count" % aoi['data_product_name']
-    #     send_email(getpass.getuser(), email_to, [], subject, msg)
 
 
 def convert_geojson(input_geojson):
@@ -496,11 +492,11 @@ if __name__ == "__main__":
                        action='store_true')
     group.add_argument("--create_only", help="only create missing datasets",
                        action='store_true')
-    parser.add_argument("--purpose", help="scrape or validate", default="scrape", required=False)
+    parser.add_argument("--purpose", help="scrape or validate or aoi_scrape", default="scrape", required=False)
     args = parser.parse_args()
     try:
         scrape(args.ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
-               args.email, args.polygon, args.user, args.password, args.dataset_version,
+               args.polygon, args.user, args.password, args.dataset_version,
                args.ingest, args.create_only, args.browse, args.purpose)
     except Exception as e:
         with open('_alt_error.txt', 'a') as f:

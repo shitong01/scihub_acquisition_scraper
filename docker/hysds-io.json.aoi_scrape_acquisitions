@@ -1,0 +1,48 @@
+{
+  "label": "Scrape Acquisitions for AOI",
+  "submission_type":"iteration",
+  "params" : [
+    {
+        "name": "es_dataset_url",
+        "from": "submitter"
+    },
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    },
+    {
+        "name": "starttime",
+        "from": "dataset_jpath:_source.starttime"
+    },
+    {
+        "name": "endtime",
+        "from": "dataset_jpath:_source.endtime"
+    },
+    {
+        "name": "polygon_flag",
+        "from": "value",
+        "value": "--polygon"
+    },
+    {
+        "name": "polygon",
+        "from": "dataset_jpath:_source.location",
+        "lambda": "lambda x: __import__('json').dumps(x).replace(' ','')"
+    },
+    {
+        "name": "ingest_flag",
+        "from": "value",
+        "value": "--ingest"
+    },
+    {
+      "name": "purpose_flag",
+      "from": "value",
+      "value": "--purpose"
+    },
+    {
+      "name": "purpose",
+      "from": "value",
+      "value": "aoi_scrape"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_apihub_opensearch.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "required-queues": [
+    "factotum-job_worker-apihub_scraper_throttled"
+  ],
+  "disk_usage":"10GB",
+  "soft_time_limit": 3300,
+  "time_limit": 3600,
+  "params" : [
+    {
+        "name": "es_dataset_url",
+        "destination": "positional"
+    },
+    {
+        "name": "ds_cfg",
+        "destination": "positional"
+    },
+    {
+        "name": "starttime",
+        "destination": "positional"
+    },
+    {
+        "name": "endtime",
+        "destination": "positional"
+    },
+    {
+        "name": "polygon_flag",
+        "destination": "positional"
+    },
+    {
+        "name": "polygon",
+        "destination": "positional"
+    },
+    {
+       "name": "ingest_flag",
+       "destination": "positional"
+    },
+    {
+      "name": "purpose_flag",
+      "destination": "positional"
+    },
+    {
+      "name": "purpose",
+      "destination": "positional"
+    }
+  ]
+}
+
