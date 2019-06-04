@@ -22,7 +22,7 @@ from hysds.dataset_ingest import ingest
 from osaka.main import get
 
 # from notify_by_email import send_email
-
+from deprecate_acquisition import deprecate_document
 
 # disable warnings for SSL verification
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -38,10 +38,12 @@ requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 log_format = "[%(asctime)s: %(levelname)s/%(funcName)s] %(message)s"
 logging.basicConfig(format=log_format, level=logging.INFO)
 
+
 class LogFilter(logging.Filter):
     def filter(self, record):
         if not hasattr(record, 'id'): record.id = '--'
         return True
+
 
 logger = logging.getLogger('scrape_apihub_opensearch')
 logger.setLevel(logging.INFO)
@@ -69,6 +71,23 @@ def get_timestamp_for_filename(time):
     time = time.replace("-", "")
     time = time.replace(":", "")
     return time
+
+
+def extract_datetime_from_metadata(ts):
+    '''
+    converts timestamp string to python datetime object
+    :param ts: string
+    :return: datetime object
+    '''
+    time_formats = ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S.%f%z',
+                    '%Y-%m-%d %H:%M:%S.%fZ', '%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S.%f%z']
+    for time_format in time_formats:
+        try:
+            extracted_date = datetime.strptime(ts, time_format)
+            return extracted_date
+        except RuntimeError as e:
+            pass
+    raise RuntimeError("Could not extract datetime object from timestamp: %s" % ts)
 
 
 def get_accurate_times(filename_str, starttime_str, endtime_str):
@@ -121,6 +140,7 @@ def list_status(starttime, endtime, prods_count, prods_missing, ids_by_track, ds
                                                                         ds_es_url,
                                                                         prods_count)
     logger.info(msg)
+
 
 def massage_result(res):
     """Massage result JSON into HySDS met json."""
@@ -210,7 +230,8 @@ def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     id = "acquisition-{}_{}_{}_{}-esa_scihub".format(met["platform"],get_timestamp_for_filename(met["sensingStart"]), met["track_number"], met["sensoroperationalmode"])
     root_ds_dir = os.path.abspath(root_ds_dir)
     ds_dir = os.path.join(root_ds_dir, id)
-    if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0755)
+    if not os.path.isdir(ds_dir):
+        os.makedirs(ds_dir, 0755)
 
     # append source to met
     met['query_api'] = "opensearch"
@@ -259,6 +280,14 @@ def rhead(url):
 
 
 def get_existing_acqs(start_time, end_time, location=False):
+    '''
+    :param start_time: str, timestamp
+    :param end_time: str, timestamp
+    :param location: coordinates array
+    :return:
+        acq_ids: list[str], list of esa UUID's
+        mission_data_id_store: { <missiondatatakeid>: { id: str, ingestiondate: str } }
+    '''
     """
     This function would query for all the acquisitions that
     temporally and spatially overlap with the AOI
@@ -312,6 +341,8 @@ def get_existing_acqs(start_time, end_time, location=False):
         query["query"]["filtered"]["filter"] = geo_shape
 
     acq_ids = []
+    mission_data_id_store = dict()  # dictionary of missiondatatakeid containing UUID, ingestion date and _id
+
     rest_url = app.conf["GRQ_ES_URL"][:-1] if app.conf["GRQ_ES_URL"].endswith('/') else app.conf["GRQ_ES_URL"]
     url = "{}/{}/_search?search_type=scan&scroll=60&size=10000".format(rest_url, index)
     r = requests.post(url, data=json.dumps(query))
@@ -335,8 +366,18 @@ def get_existing_acqs(start_time, end_time, location=False):
 
     for item in hits:
         acq_ids.append(item.get("_source").get("metadata").get("id"))
+        missiondatatakeid = item['_source']['metadata'].get('missiondatatakeid')
 
-    return acq_ids
+        if missiondatatakeid:
+            acq_id = item['_source']['metadata'].get('id')
+            ingestion_date = item['_source']['metadata'].get('ingestiondate')
+            mission_data_id_store[missiondatatakeid] = {
+                'id': acq_id,
+                '_id': item['_id'],
+                'ingestionDate': ingestion_date,
+            }
+
+    return acq_ids, mission_data_id_store
 
 
 def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, password=None,
@@ -345,7 +386,8 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
 
     # get session
     session = requests.session()
-    if None not in (user, password): session.auth = (user, password)
+    if None not in (user, password):
+        session.auth = (user, password)
 
     # set query
     if purpose == "scrape":
@@ -357,9 +399,10 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
 
     if polygon:
         query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
-        existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime, location=json.loads(polygon))
+        existing_acqs, acq_key_value_store = get_existing_acqs(start_time=starttime, end_time=endtime,
+                                                               location=json.loads(polygon))
     else:
-        existing_acqs = get_existing_acqs(start_time=starttime, end_time=endtime)
+        existing_acqs, acq_key_value_store = get_existing_acqs(start_time=starttime, end_time=endtime)
     
     # query
     prods_all = {}
@@ -374,24 +417,33 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
         logger.info("query: %s" % json.dumps(query_params, indent=2))
         response = session.get(url, params=query_params, verify=False)
         logger.info("query_url: %s" % response.url)
+
         if response.status_code != 200:
             logger.error("Error: %s\n%s" % (response.status_code,response.text))
         response.raise_for_status()
         results = response.json()
+
         if total_results_expected is None:
             total_results_expected = int(results['feed']['opensearch:totalResults'])
         entries = results['feed'].get('entry', None)
-        if entries is None: break
+
+        if entries is None:
+            break
+
         with open('res.json', 'w') as f:
             f.write(json.dumps(entries, indent=2))
-        if isinstance(entries, dict): entries = [ entries ] # if one entry, scihub doesn't return a list
+
+        if isinstance(entries, dict):
+            entries = [entries]  # if one entry, scihub doesn't return a list
         count = len(entries)
         offset += count
         loop = True if count > 0 else False
         logger.info("Found: {0} results".format(count))
+
         for met in entries:
-            try: massage_result(met) 
-            except Exception, e:
+            try:
+                massage_result(met)
+            except Exception as e:
                 logger.error("Failed to massage result: %s" % json.dumps(met, indent=2, sort_keys=True))
                 logger.error("Extracted entries: %s" % json.dumps(entries, indent=2, sort_keys=True))
                 raise
@@ -410,6 +462,31 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
                 prods_found.append(met["id"])
 
             ids_by_track.setdefault(met['track_number'], []).append(met['id'])
+
+            # FINDING ANY DUPLICATE ACQS WITH MISSIONDATATAKEID
+            scihub_missiontakeid = met.get('missiondatatakeid')  # missiondatatakeid helps find duplicate acqs
+            existing_acq = acq_key_value_store.get(scihub_missiontakeid)  # if we already have the acq
+
+            if not scihub_missiontakeid or not existing_acq:
+                continue
+
+            logger.info('missiondatatakeid found in our system: %s' % scihub_missiontakeid)
+            logger.info('existing acquisition: {}'.format(json.dumps(existing_acq, indent=2)))
+
+            # existing ingestionDate from elasticsearch
+            es_ingestion_date = extract_datetime_from_metadata(existing_acq['ingestionDate'])
+            scihub_ingestion_date = extract_datetime_from_metadata(met['ingestiondate'])
+
+            if scihub_ingestion_date <= es_ingestion_date:
+                # remove scihub's ID from products missing list if scihub's record is older than our own record
+                logger.info('scihub acq %s is older than existing acq, removing from prods_missing' % met['id'])
+                prods_missing.remove(met['id'])
+            else:
+                "mark older acq in elasticsearch as deprecated"
+                _id = existing_acq['_id']
+                index = 'grq_v2.0_acquisition-s1-iw_slc'
+                deprecate_document(index, _id)
+                logger.info('deprecated acq: %s, index: %s' % (_id, index))
 
         # don't clobber the connection
         time.sleep(3)
