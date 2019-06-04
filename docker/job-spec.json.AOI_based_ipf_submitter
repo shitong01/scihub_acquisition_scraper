@@ -7,8 +7,8 @@
     "factotum-job_worker-small"
   ],
   "disk_usage":"4GB",
-  "soft_time_limit": 3300,
-  "time_limit": 3600,
+  "soft_time_limit": 7200,
+  "time_limit": 7800,
   "params" : [
     {
       "name": "AOI_name",
