@@ -47,7 +47,7 @@ def check_prod_avail(session, link):
     """
 
     product_url = "{}$value".format(link)
-    response = session.get(product_url, verify=False, timeout=180)
+    response = session.head(product_url, verify=False, timeout=180)
     return response.status_code
 
 
@@ -137,6 +137,7 @@ def extract_asf_ipf(id):
 
 
 def update_ipf(id, ipf_version):
+    logger.info("Updating IPF Version of {}. IPF Version: {}".format(id, ipf_version))
     ES.update(index=_index, doc_type=_type, id=id,
               body={"doc": {"metadata": {"processing_version": ipf_version}}})
 
