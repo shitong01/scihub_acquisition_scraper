@@ -479,8 +479,9 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
 
             if scihub_ingestion_date <= es_ingestion_date:
                 # remove scihub's ID from products missing list if scihub's record is older than our own record
-                logger.info('scihub acq %s is older than existing acq, removing from prods_missing' % met['id'])
-                prods_missing.remove(met['id'])
+                if met['id'] in prods_missing:
+                    logger.info('scihub acq %s is older than existing acq, removing from prods_missing' % met['id'])
+                    prods_missing.remove(met['id'])
             else:
                 "mark older acq in elasticsearch as deprecated"
                 _id = existing_acq['_id']
