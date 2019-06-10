@@ -27,6 +27,48 @@ _index = None
 _type = None
 ES = elasticsearch.Elasticsearch(es_url)
 
+job_es_url = app.conf["JOBS_ES_URL"]
+MOZART_ES = elasticsearch.Elasticsearch(job_es_url)
+_job_index = "job_status-current"
+_job_doc_type = "job"
+
+def find_duplicate_jobs(job_type, acq_id):
+    query = {
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "type": job_type
+          }
+        }
+      ]
+    }
+  }
+}
+    MOZART_ES.search(index=_job_index, doc_type=_job_doc_type, body=query)
+    return
+
+def evaluate_short_circuit(acq_id):
+    """
+    Evaluates whether current job should short circuit and exit
+    Will do so in case there is other duplicate job in systerm with a lower retry count
+    :param acq_id:
+    :return:
+    """
+    # find current job's retry count, if exists
+    job_json = json.loads(open("_job.json","r").read())
+    retry_count = int(job_json.get("retry_count", 0))
+    job_type = job_json.get("type")
+
+    if retry_count == 0:
+        return
+    else:
+        # see if any duplicate jobs in system with lower retry count
+        results = find_duplicate_jobs(job_type, acq_id)
+
+
+    return
 
 def check_ipf_avail(id):
     result = ES.search(index="grq",body={"query": {"term": {"_id": id}}})
@@ -104,19 +146,23 @@ def get_dataset_json(met, version):
     }
 
 
-def extract_asf_ipf(id):
+def extract_asf_ipf(id, start_time, end_time):
     ipf = None
     try:
         # query the asf search api to find the download url for the .iso.xml file
-        request_string = 'https://api.daac.asf.alaska.edu/services/search/param?platform=SA,SB&processingLevel=METADATA_SLC' \
-                         '&granule_list=%s&output=json' % id
+        request_string = "https://api.daac.asf.alaska.edu/services/search/param?platform=SA,SB&processingLevel=METADATA_SLC" \
+                         "&start={}&end={}&output=json".format(start_time, end_time)
         logger.info("ASF request URL: {}".format(request_string))
         response = requests.get(request_string)
         response.raise_for_status()
         results = json.loads(response.text)
-        logger.info("Response from ASF: {}".format(response.text))
+        logger.info("Response for acquistion {} from ASF: {}".format(id, response.text))
         # download the .iso.xml file, assumes earthdata login credentials are in your .netrc file
-        response = requests.get(results[0][0]['downloadUrl'])
+        hits = len(results[0])
+        if hits == 1:
+            response = requests.get(results[0][0]['downloadUrl'])
+            #  else, figure out how to handle multiple results
+
         response.raise_for_status()
         if response.status_code != 200:
             raise Exception("Request to ASF failed with status {}. {}".format(response.status_code, request_string))
@@ -181,34 +227,31 @@ if __name__ == "__main__":
     _type = ctx.get("dataset_type")
     endpoint = ctx["endpoint"]
 
+    evaluate_short_circuit(id)
+
     if check_ipf_avail(id):
-        logger.error("Acquisition already has IPF, not processing with scraping")
-        with open('_alt_error.txt', 'w') as f:
-            f.write("Acquisition already has IPF, not processing with scraping for {}".format(id))
-            f.close()
-        sys.exit(1)
-    
-    if endpoint == "asf":
-        try:
-            ipf = extract_asf_ipf(met.get("identifier"))
-            if ipf is None:
-                raise Exception
-        except Exception:
-                with open('_alt_error.txt', 'w') as f:
-                    f.write("Failed to extract IPF version from ASF for {}".format(id))
-                with open('_alt_traceback.txt', 'w') as f:
-                    f.write("%s\n" % traceback.format_exc())
-                raise Exception("Failed to extract IPF version from ASF for {}".format(id))
-    else:
-        try:
+        logger.error("Acquisition already has IPF, not processing with scraping for {}".format(id))
+        sys.exit(0)
+
+    try:
+        if endpoint == "asf":
+            ipf = extract_asf_ipf(id=met.get("identifier"), start_time=met.get("sensingStart"), end_time=met.
+                              get("sensingStop"))
+        else:
             ipf = extract_scihub_ipf(met)
-            if ipf is None:
-                raise Exception
-        except Exception:
+        if ipf is None:
             with open('_alt_error.txt', 'w') as f:
-                f.write("Failed to extract IPF version from SciHub for {}".format(id))
-            with open('_alt_traceback.txt', 'w') as f:
-                f.write("%s\n" % traceback.format_exc())
-            raise Exception("Failed to extract IPF version from SciHub for {}".format(id))
+                f.write("Retrieved a null IPF version from {} for {}".format(endpoint, id))
+            raise Exception
+    except Exception:
+        with open('_alt_error.txt', 'w') as f:
+            f.write("Failed to extract IPF version from {} for {}".format(endpoint, id))
+        with open('_alt_traceback.txt', 'w') as f:
+            f.write("%s\n" % traceback.format_exc())
+        raise Exception("Failed to extract IPF version from {} for {}".format(endpoint, id))
+
+    if check_ipf_avail(id):
+        logger.info("Acquisition already has IPF, not updating again")
+        sys.exit(0)
 
     update_ipf(id, ipf)
