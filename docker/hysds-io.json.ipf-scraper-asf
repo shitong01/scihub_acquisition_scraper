@@ -24,6 +24,11 @@
         "value": "asf"
     },
     {
+        "name": "force",
+        "from": "submitter",
+        "type": "boolean"
+    },
+    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"

@@ -122,6 +122,11 @@ def submit_ipf_scraper(acq, tag, endpoint):
             "value": endpoint
         },
         {
+            "name": "force",
+            "from": "value",
+            "value": False
+        },
+        {
             "name": "ds_cfg",
             "from": "value",
             "value": "datasets.json"
@@ -164,7 +169,7 @@ if __name__ == "__main__":
         print("Date:" + acq.get("metadata").get("sensingStart"))
         acq_date = acq.get("metadata").get("sensingStart")
         start_time = dateutil.parser.parse(acq_date)
-        if start_time.replace(tzinfo=None) < datetime.now() - timedelta(days=1):
+        if start_time.replace(tzinfo=None) < datetime.now() - timedelta(days=2):
             endpoint = "asf"
         else:
             endpoint = "scihub"

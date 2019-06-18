@@ -32,6 +32,7 @@ MOZART_ES = elasticsearch.Elasticsearch(job_es_url)
 _job_index = "job_status-current"
 _job_doc_type = "job"
 
+
 def find_duplicate_jobs(job_type, acq_id):
     query = {
   "query": {
@@ -41,13 +42,23 @@ def find_duplicate_jobs(job_type, acq_id):
           "term": {
             "type": job_type
           }
+        },
+        {
+          "query_string": {
+            "query": "\"{}\"".format(acq_id),
+            "default_operator": "OR"
+          }
         }
       ]
     }
-  }
+  },
+  "fields": [
+    "job.retry_count",
+    "status"
+  ]
 }
-    MOZART_ES.search(index=_job_index, doc_type=_job_doc_type, body=query)
-    return
+    return MOZART_ES.search(index=_job_index, doc_type=_job_doc_type, body=query)
+
 
 def evaluate_short_circuit(acq_id):
     """
@@ -62,16 +73,31 @@ def evaluate_short_circuit(acq_id):
     job_type = job_json.get("type")
 
     if retry_count == 0:
-        return
+        return False
     else:
         # see if any duplicate jobs in system with lower retry count
         results = find_duplicate_jobs(job_type, acq_id)
+        count = results.get("hits").get("total")
+        if count == 0:
+            return False
+        else:
+            for hit in results.get("hits").get("hits"):
+                job_id = hit.get("_id")
+                status = hit.get("fields").get("status")[0]
+                if status == "job-completed":
+                    logger.info("Found completed job in the system but the IPF is still null. Please Investigate.")
+                    raise Exception("Found completed job in the system but the IPF is still null. Please Investigate.")
+                else:
+                    other_retry_count = hit.get("fields").get("job.retry_count", [0])[0]
+                    if other_retry_count < retry_count:
+                        logger.info("Found another job: {}, with lower retry_count of {} and status {}"
+                                    .format(job_id, other_retry_count, status))
+                        return True
+    return False
 
-
-    return
 
 def check_ipf_avail(id):
-    result = ES.search(index="grq",body={"query": {"term": {"_id": id}}})
+    result = ES.search(index="grq", body={"query": {"term": {"_id": id}}})
     ipf_version = result.get("hits").get("hits")[0].get("_source").get("metadata").get("processing_version", None)
 
     if ipf_version is not None:
@@ -226,12 +252,23 @@ if __name__ == "__main__":
     _index = ctx.get("index")
     _type = ctx.get("dataset_type")
     endpoint = ctx["endpoint"]
+    force = ctx["force"]
 
-    evaluate_short_circuit(id)
+    if not force:
+        try:
+            if check_ipf_avail(id):
+                logger.info("Acquisition already has IPF, not processing with scraping for {}".format(id))
+                sys.exit(0)
 
-    if check_ipf_avail(id):
-        logger.error("Acquisition already has IPF, not processing with scraping for {}".format(id))
-        sys.exit(0)
+            if evaluate_short_circuit(id):
+                logger.info("IPF scrape job with lower retry count exists for this acquisition, "
+                            "not submitting scrape job")
+                sys.exit(0)
+        except Exception as ex:
+            with open('_alt_error.txt', 'w') as f:
+                f.write("{}".format(ex))
+            with open('_alt_traceback.txt', 'w') as f:
+                f.write("{}\n".format(traceback.format_exc()))
 
     try:
         if endpoint == "asf":
@@ -248,7 +285,6 @@ if __name__ == "__main__":
             f.write("Failed to extract IPF version from {} for {}".format(endpoint, id))
         with open('_alt_traceback.txt', 'w') as f:
             f.write("%s\n" % traceback.format_exc())
-        raise Exception("Failed to extract IPF version from {} for {}".format(endpoint, id))
 
     if check_ipf_avail(id):
         logger.info("Acquisition already has IPF, not updating again")

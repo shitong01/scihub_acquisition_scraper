@@ -32,6 +32,10 @@
 
     },
     {
+        "name": "force",
+        "destination": "context"
+    },
+    {
         "name": "ds_cfg",
         "destination": "positional"
     }
