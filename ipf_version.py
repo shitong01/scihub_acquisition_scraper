@@ -115,7 +115,8 @@ def check_prod_avail(session, link):
     """
 
     product_url = "{}$value".format(link)
-    response = session.get(product_url, verify=False, timeout=180)
+    response = session.head(product_url, verify=False, timeout=180)
+
     return response.status_code
 
 
@@ -185,30 +186,35 @@ def extract_asf_ipf(id, start_time, end_time):
         logger.info("Response for acquistion {} from ASF: {}".format(id, response.text))
         # download the .iso.xml file, assumes earthdata login credentials are in your .netrc file
         hits = len(results[0])
+        if hits == 0:
+            raise Exception("Acquisition not found at ASF.")
         if hits == 1:
             response = requests.get(results[0][0]['downloadUrl'])
             #  else, figure out how to handle multiple results
-
         response.raise_for_status()
         if response.status_code != 200:
-            raise Exception("Request to ASF failed with status {}. {}".format(response.status_code, request_string))
+            raise Exception("Request to ASF failed with status {}.".format(response.status_code))
         # parse the xml file to extract the ipf version string
         root = fromstring(response.text.encode('utf-8'))
         ns = {'gmd': 'http://www.isotc211.org/2005/gmd', 'gmi': 'http://www.isotc211.org/2005/gmi',
               'gco': 'http://www.isotc211.org/2005/gco'}
-        ipf_string = root.find(
-            'gmd:composedOf/gmd:DS_DataSet/gmd:has/gmi:MI_Metadata/gmd:dataQualityInfo/gmd:DQ_DataQuality/gmd:lineage/gmd:LI_Lineage/gmd:processStep/gmd:LI_ProcessStep/gmd:description/gco:CharacterString',
-            ns).text
+        try:
+            ipf_string = root.find(
+                'gmd:composedOf/gmd:DS_DataSet/gmd:has/gmi:MI_Metadata/gmd:dataQualityInfo/gmd:DQ_DataQuality/gmd:lineage/gmd:LI_Lineage/gmd:processStep/gmd:LI_ProcessStep/gmd:description/gco:CharacterString',
+                ns).text
+        except AttributeError:
+            raise Exception("IPF not found in XML from download URL. Failed to extract IPF version from ASF.")
         if ipf_string:
             ipf = ipf_string.split('version')[1].split(')')[0].strip()
     except Exception as err:
-        logger.info("get_processing_version_from_asf : %s" % str(err))
-        raise Exception("Error get_processing_version_from_asf : %s" % str(err))
+        logger.info("get_processing_version_from_asf: %s" % str(err))
+        raise Exception("{}".format(str(err)))
 
     return ipf
 
 
 def update_ipf(id, ipf_version):
+    logger.info("Updating IPF Version of {}. IPF Version: {}".format(id, ipf_version))
     ES.update(index=_index, doc_type=_type, id=id,
               body={"doc": {"metadata": {"processing_version": ipf_version}}})
 
@@ -234,6 +240,9 @@ def extract_scihub_ipf(met):
     elif prod_avail == 202:
         logger.info("Got 202 from SciHub. Product moved to long term archive.")
         raise Exception("Got 202. Product moved to long term archive.")
+    elif prod_avail == 503:
+        logger.info("Exceeding max concurrent SciHub connections.")
+        raise Exception("Exceeding max concurrent SciHub connections.")
     else:
         logger.info("Got code {} from SciHub".format(prod_avail))
         raise Exception("Got code {}".format(prod_avail))
@@ -246,7 +255,7 @@ if __name__ == "__main__":
     '''
     Main program that find IPF version for acquisition
     '''
-    ctx = json.loads(open("_context.json","r").read())
+    ctx = json.loads(open("_context.json", "r").read())
     id = ctx["acq_id"]
     met = ctx["acq_met"]
     _index = ctx.get("index")
@@ -268,21 +277,21 @@ if __name__ == "__main__":
             with open('_alt_error.txt', 'w') as f:
                 f.write("{}".format(ex))
             with open('_alt_traceback.txt', 'w') as f:
-                f.write("{}\n".format(traceback.format_exc()))
+                f.write("%s\n" % traceback.format_exc())
 
     try:
         if endpoint == "asf":
-            ipf = extract_asf_ipf(id=met.get("identifier"), start_time=met.get("sensingStart"), end_time=met.
-                              get("sensingStop"))
+            ipf = extract_asf_ipf(id=met.get("identifier"), start_time=met.get("sensingStart"),
+                                  end_time=met.get("sensingStop"))
         else:
             ipf = extract_scihub_ipf(met)
         if ipf is None:
             with open('_alt_error.txt', 'w') as f:
                 f.write("Retrieved a null IPF version from {} for {}".format(endpoint, id))
             raise Exception
-    except Exception:
+    except Exception as ex:
         with open('_alt_error.txt', 'w') as f:
-            f.write("Failed to extract IPF version from {} for {}".format(endpoint, id))
+            f.write("{}".format(ex))
         with open('_alt_traceback.txt', 'w') as f:
             f.write("%s\n" % traceback.format_exc())
 
