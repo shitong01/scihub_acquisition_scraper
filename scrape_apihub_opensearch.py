@@ -493,6 +493,7 @@ if __name__ == "__main__":
     group.add_argument("--create_only", help="only create missing datasets",
                        action='store_true')
     parser.add_argument("--purpose", help="scrape or validate or aoi_scrape", default="scrape", required=False)
+    parser.add_argument("--report", help="create a report", action='store_true')
     args = parser.parse_args()
     try:
         scrape(args.ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
