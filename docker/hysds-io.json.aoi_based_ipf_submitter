@@ -1,0 +1,23 @@
+{
+  "submission_type":"iteration",
+  "label": "AOI based submission of IPF scraper jobs",
+
+  "params" : [
+    {
+        "name": "AOI_name",
+        "from": "dataset_jpath:_id"
+    },
+    {
+        "name": "spatial_extent",
+        "from": "dataset_jpath:_source.location"
+    },
+    {
+        "name": "start_time",
+        "from": "dataset_jpath:_source.starttime"
+    },
+    {
+        "name": "end_time",
+        "from": "dataset_jpath:_source.endtime"
+    }
+  ]
+}

@@ -9,6 +9,7 @@
   "disk_usage":"10GB",
   "soft_time_limit": 3300,
   "time_limit": 3600,
+  "enable_dedup": False,
   "params" : [
     {
         "name": "es_dataset_url",
@@ -18,34 +19,17 @@
         "name": "ds_cfg",
         "destination": "positional"
     },
-    {
+    {   
         "name": "starttime",
         "destination": "positional"
     },
-    {
+    {   
         "name": "endtime",
         "destination": "positional"
     },
-    {
-        "name": "polygon_flag",
+    {   
+        "name": "ingest_flag",
         "destination": "positional"
-    },
-    {
-        "name": "polygon",
-        "destination": "positional"
-    },
-    {
-       "name": "ingest_flag",
-       "destination": "positional"
-    },
-    {
-      "name": "purpose_flag",
-      "destination": "positional"
-    },
-    {
-      "name": "purpose",
-      "destination": "positional"
     }
   ]
 }
-

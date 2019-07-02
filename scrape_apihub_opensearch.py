@@ -21,8 +21,6 @@ from hysds.celery import app
 from hysds.dataset_ingest import ingest
 from osaka.main import get
 
-# from notify_by_email import send_email
-
 
 # disable warnings for SSL verification
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -38,10 +36,12 @@ requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 log_format = "[%(asctime)s: %(levelname)s/%(funcName)s] %(message)s"
 logging.basicConfig(format=log_format, level=logging.INFO)
 
+
 class LogFilter(logging.Filter):
     def filter(self, record):
         if not hasattr(record, 'id'): record.id = '--'
         return True
+
 
 logger = logging.getLogger('scrape_apihub_opensearch')
 logger.setLevel(logging.INFO)
@@ -72,13 +72,12 @@ def get_timestamp_for_filename(time):
 
 
 def get_accurate_times(filename_str, starttime_str, endtime_str):
-    '''
+    """
     Use the seconds from the start/end strings to append to the input filename timestamp to keep accuracy
-
     filename_str -- input S1_IW_SLC filename string
-    starttime -- starttime string from SciHub metadata
-    endtime -- endtime string from SciHub metadata
-    '''
+    starttime_str -- starttime string from SciHub metadata
+    endtime_str -- endtime string from SciHub metadata
+    """
     match_pattern = "(?P<spacecraft>S1\w)_IW_SLC__(?P<misc>.*?)_(?P<s_year>\d{4})(?P<s_month>\d{2})(?P<s_day>\d{2})T(?P<s_hour>\d{2})(?P<s_minute>\d{2})(?P<s_seconds>\d{2})_(?P<e_year>\d{4})(?P<e_month>\d{2})(?P<e_day>\d{2})T(?P<e_hour>\d{2})(?P<e_minute>\d{2})(?P<e_seconds>\d{2})(?P<misc2>.*?)$"
     m = re.match(match_pattern, filename_str)
     metadata_st = dateutil.parser.parse(starttime_str).strftime('%Y-%m-%dT%H:%M:%S')
@@ -121,6 +120,7 @@ def list_status(starttime, endtime, prods_count, prods_missing, ids_by_track, ds
                                                                         ds_es_url,
                                                                         prods_count)
     logger.info(msg)
+
 
 def massage_result(res):
     """Massage result JSON into HySDS met json."""
@@ -268,7 +268,6 @@ def get_existing_acqs(start_time, end_time, location=False):
     :return:
     """
     index = "grq_v2.0_acquisition-s1-iw_slc"
-    type = "acquisition-S1-IW_SLC"
 
     query = {
         "query": {
@@ -339,13 +338,52 @@ def get_existing_acqs(start_time, end_time, location=False):
     return acq_ids
 
 
+def create_report(starttime, endtime, polygon, still_missing, aoi_name=None, version="v0.1"):
+    """
+    Write out report
+    :param starttime:
+    :param endtime:
+    :param polygon:
+    :param still_missing:
+    :param aoi_name:
+    :param version:
+    :return:
+    """
+    if aoi_name is not None:
+        label = "report-{}_".format(aoi_name)
+    else:
+        label = "report-daily_"
+    label += "{}_{}".format(starttime, endtime)
+
+    dataset = {
+        "version": version,
+        "label": label,
+        "location": polygon,
+        "starttime": starttime,
+        "endtime": endtime
+    }
+
+    met = dict()
+    met["missing acquisitions"] = still_missing
+
+    os.makedirs(label, 0755)
+    ds_file = os.path.join(label, "{}.dataset.json".format(label))
+    met_file = os.path.join(label, "{}.met.json".format(label))
+    with open(ds_file, 'w') as f:
+        json.dump(dataset, f, indent=2, sort_keys=True)
+    with open(met_file, 'w') as f:
+        json.dump(met, f, indent=2, sort_keys=True)
+
+
 def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, password=None,
-           version="v2.0", ingest_missing=False, create_only=False, browse=False, purpose="scrape"):
+           version="v2.0", ingest_missing=False, create_only=False, browse=False, purpose="scrape", report=False):
     """Query ApiHub (OpenSearch) for S1 SLC scenes and generate acquisition datasets."""
 
     # get session
     session = requests.session()
     if None not in (user, password): session.auth = (user, password)
+
+    ctx = json.loads(open("_context.json", "r").read)
 
     # set query
     if purpose == "scrape":
@@ -421,21 +459,29 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
         raise RuntimeError("Cannot specify ingest_missing=True and create_only=True.")
 
     # create and ingest missing datasets for ingest
+    still_missing = []
     if ingest_missing and not create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
             if ingest_acq_dataset(info['ds'], info['met'], ds_cfg):
                 logger.info("Created and ingested %s\n" % acq_id)
             else:
+                slc_id = info['met']['data_product_name']
+                still_missing.append(slc_id)
                 logger.info("Failed to create and ingest %s\n" % acq_id)
 
     # just create missing datasets
     if not ingest_missing and create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
-
             id, ds_dir = create_acq_dataset(info['ds'], info['met'], browse=browse)
             logger.info("Created %s\n" % acq_id)
+
+    if report:
+        if ctx.get("aoi_name", None) is not None:
+            create_report(starttime, endtime, polygon, still_missing, aoi_name=ctx.get("aoi_name", None))
+        else:
+            create_report(starttime, endtime, polygon, still_missing)
 
 
 def convert_geojson(input_geojson):
@@ -471,8 +517,6 @@ def convert_to_wkt(input_obj):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("ds_es_url", help="ElasticSearch URL for acquisition dataset, e.g. " +
-                         "http://aria-products.jpl.nasa.gov:9200/grq_v2.0_acquisition-s1-iw_slc/acquisition-S1-IW_SLC")
     parser.add_argument("datasets_cfg", help="HySDS datasets.json file, e.g. " +
                          "/home/ops/verdi/etc/datasets.json")
     parser.add_argument("starttime", help="Start time in ISO8601 format", nargs='?',
@@ -484,8 +528,6 @@ if __name__ == "__main__":
                         default="v2.0", required=False)
     parser.add_argument("--user", help="SciHub user", default=None, required=False)
     parser.add_argument("--password", help="SciHub password", default=None, required=False)
-    parser.add_argument("--email", help="email addresses to send email to", 
-                        nargs='+', required=False)
     parser.add_argument("--browse", help="create browse images", action='store_true')
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ingest", help="create and ingest missing datasets",
@@ -496,9 +538,11 @@ if __name__ == "__main__":
     parser.add_argument("--report", help="create a report", action='store_true')
     args = parser.parse_args()
     try:
-        scrape(args.ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
+        ds_es_url = app.conf("GRQ_ES_URL") + "/grq_{}_acquisition-s1-iw_slc/acquisition-S1-IW_SLC".format(
+            args.dataset_version)
+        scrape(ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
                args.polygon, args.user, args.password, args.dataset_version,
-               args.ingest, args.create_only, args.browse, args.purpose)
+               args.ingest, args.create_only, args.browse, args.purpose, args.report)
     except Exception as e:
         with open('_alt_error.txt', 'a') as f:
             f.write("%s\n" % str(e))

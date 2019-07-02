@@ -19,8 +19,7 @@ def validate_temporal_input(starttime, hours_delta, days_delta):
     :return:
     '''
     if isinstance(hours_delta, int) and isinstance(days_delta, int):
-        raise Exception("Please make sure the delta specified is a number")
-
+        raise Exception("Please make sure the delta specified is a number"
     if starttime is None and hours_delta is None and days_delta is not None:
         return "%sZ".format((datetime.utcnow()-timedelta(days=days_delta)).isoformat()), "daily"
     elif starttime is None and hours_delta is not None and days_delta is None:
@@ -91,37 +90,29 @@ if __name__ == "__main__":
     '''
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("qtype", help="query endpoint, e.g. (opensearch|odata|stub)")
     parser.add_argument("--dataset_version", help="version of acquisition dataset, e.g. v1.1")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--days", help="Delta in days", nargs='?',
-                        default=5, required=False)
-    group.add_argument("--hours", help="Delta in hours", nargs='?',
-                        default=5, required=False)
-    group.add_argument("starttime", help="Start time in ISO8601 format", nargs='?', required=False)
+    parser.add_argument("starttime", help="Start time in ISO8601 format", nargs='?', required=True)
     parser.add_argument("endtime", help="End time in ISO8601 format", nargs='?',
-                        default="%sZ" % datetime.utcnow().isoformat(), required=False)
+                        default="%sZ" % datetime.utcnow().isoformat(), required=True)
     parser.add_argument("--tag", help="PGE docker image tag (release, version, " +
                                       "or branch) to propagate",
                         default="master", required=True)
-    parser.add_argument("--polygon", required=False)
+    parser.add_argument("--polygon", required=True)
 
     args = parser.parse_args()
-    qtype = args.qtype
+    qtype = "opensearch"
     dataset_version = args.dataset_version
-    days_delta = args.days
-    hours_delta = args.hours
     starttime = args.starttime
     endtime = args.endtime
     tag = args.tag
-    job_type = "job-acquisition_ingest-scihub"
-
-    starttime, job_name = validate_temporal_input(starttime, hours_delta, days_delta)
+    job_type = "job-acquisition_ingest-aoi"
     job_spec = "{}:{}".format(job_type, tag)
 
     rtime = datetime.utcnow()
+    ctx = open("_context.json", "r").read()
+    aoi_name = ctx.get("aoi_name", None)
 
-    job_name = "%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
+    job_name = "%s-%s-%s-%s-%s" % (job_spec, aoi_name, starttime.replace("-", "").replace(":", ""),
                                 endtime.replace("-", "").replace(":", ""),
                                 rtime.strftime("%d_%b_%Y_%H:%M:%S"))
     job_name = job_name.lstrip('job-')

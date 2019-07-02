@@ -1,0 +1,30 @@
+{
+  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/AOI_based_acq_submitter.py",
+  "imported_worker_files": {
+    "/home/ops/.netrc": "/home/ops/.netrc"
+  },
+  "required-queues": [
+    "factotum-job_worker-small"
+  ],
+  "disk_usage":"4GB",
+  "soft_time_limit": 7200,
+  "time_limit": 7800,
+  "params" : [
+    {
+      "name": "AOI_name",
+      "destination": "context"
+    },
+    {
+      "name": "spatial_extent",
+      "destination": "context"
+    },
+    {
+      "name": "start_time",
+      "destination": "context"
+    },
+    {
+      "name": "end_time",
+      "destination": "context"
+    }
+  ]
+}
