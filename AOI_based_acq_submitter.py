@@ -19,7 +19,7 @@ def validate_temporal_input(starttime, hours_delta, days_delta):
     :return:
     '''
     if isinstance(hours_delta, int) and isinstance(days_delta, int):
-        raise Exception("Please make sure the delta specified is a number"
+        raise Exception("Please make sure the delta specified is a number")
     if starttime is None and hours_delta is None and days_delta is not None:
         return "%sZ".format((datetime.utcnow()-timedelta(days=days_delta)).isoformat()), "daily"
     elif starttime is None and hours_delta is not None and days_delta is None:
