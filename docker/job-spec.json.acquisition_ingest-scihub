@@ -9,7 +9,6 @@
   "disk_usage":"10GB",
   "soft_time_limit": 3300,
   "time_limit": 3600,
-  "enable_dedup": False,
   "params" : [
     {
         "name": "ds_cfg",
