@@ -479,7 +479,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
 
     if report:
         if ctx.get("aoi_name", None) is not None:
-            create_report(starttime, endtime, polygon, still_missing, aoi_name=ctx.get("aoi_name", None))
+            create_report(starttime, endtime, polygon, still_missing, aoi_name=ctx.get("aoi_name"))
         else:
             create_report(starttime, endtime, polygon, still_missing)
 

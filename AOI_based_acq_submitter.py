@@ -29,7 +29,7 @@ def get_time_segments(start_time, end_time):
     return segment_pairs
 
 
-def get_job_params(job_type, starttime, endtime, polygon, dataset_version):
+def get_job_params(aoi_name, job_type, starttime, endtime, polygon, dataset_version):
 
     rule = {
         "rule_name": job_type.lstrip('job-'),
@@ -38,6 +38,11 @@ def get_job_params(job_type, starttime, endtime, polygon, dataset_version):
         "kwargs": '{}'
     }
     params = [
+        {
+            "name": "ds_cfg",
+            "from": "value",
+            "value": aoi_name
+        },
         {
             "name": "ds_cfg",
             "from": "value",
@@ -135,7 +140,8 @@ if __name__ == "__main__":
         job_name = job_name.lstrip('job-')
 
         # Setup input arguments here
-        rule, params = get_job_params(job_type=job_type,
+        rule, params = get_job_params(aoi_name=aoi_name,
+                                      job_type=job_type,
                                       starttime=start_time,
                                       endtime=end_time,
                                       polygon=polygon,

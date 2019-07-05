@@ -2,6 +2,10 @@
   "submission_type":"individual",
   "params" : [
     {
+        "name": "aoi_name",
+        "from": "submitter"
+    },
+    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"

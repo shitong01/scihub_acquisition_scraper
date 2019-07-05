@@ -11,6 +11,10 @@
   "time_limit": 3600,
   "params" : [
     {
+       "name": "aoi_name",
+       "destination": "context"
+    },
+    {
         "name": "ds_cfg",
         "destination": "positional"
     },
