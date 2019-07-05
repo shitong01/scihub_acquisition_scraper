@@ -2,10 +2,6 @@
   "submission_type":"individual",
   "params" : [
     {
-        "name": "es_dataset_url",
-        "from": "submitter"
-    },
-    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"

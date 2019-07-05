@@ -391,7 +391,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
     elif purpose == "validate":
         query = VALIDATE_QUERY_TEMPLATE.format(starttime, endtime)
     elif purpose == "aoi_scrape":
-        query = AOI_BASED_QUERY_TEMPLATE.format(starttime,endtime)
+        query = AOI_BASED_QUERY_TEMPLATE.format(starttime, endtime)
 
     if polygon:
         query += ' ( footprint:"Intersects({})")'.format(convert_to_wkt(polygon))
@@ -535,7 +535,7 @@ if __name__ == "__main__":
     group.add_argument("--create_only", help="only create missing datasets",
                        action='store_true')
     parser.add_argument("--purpose", help="scrape or validate or aoi_scrape", default="scrape", required=False)
-    parser.add_argument("--report", help="create a report", action='store_true')
+    parser.add_argument("--report", help="create a report", default=False, action='store_true', required=False)
     args = parser.parse_args()
     try:
         ds_es_url = app.conf("GRQ_ES_URL") + "/grq_{}_acquisition-s1-iw_slc/acquisition-S1-IW_SLC".format(

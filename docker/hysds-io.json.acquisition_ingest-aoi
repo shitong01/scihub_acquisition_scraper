@@ -2,10 +2,6 @@
   "submission_type":"individual",
   "params" : [
     {
-        "name": "es_dataset_url",
-        "from": "submitter"
-    },
-    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"
@@ -19,9 +15,42 @@
         "from": "submitter"
     },
     {
+      "name": "polygon_flag",
+      "from": "value",
+      "value": "--polygon"
+    },
+    {
+        "name": "polygon",
+        "from": "submitter"
+    },
+    {
+        "name": "ds_flag",
+        "from": "value",
+        "value": "--ingest"
+    },
+    {
+        "name": "ds_version",
+        "from": "submitter"
+    },
+    {
         "name": "ingest_flag",
         "from": "value",
         "value": "--ingest"
+    },
+    {
+        "name": "purpose_flag",
+        "from": "value",
+        "value": "--purpose"
+    },
+    {
+        "name": "purpose",
+        "from": "value",
+        "value": "aoi_scrape"
+    },
+    {
+        "name": "report_flag",
+        "from": "value",
+        "value": "--report"
     }
   ]
 }

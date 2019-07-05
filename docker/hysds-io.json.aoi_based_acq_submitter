@@ -1,6 +1,6 @@
 {
   "submission_type":"iteration",
-  "label": "AOI based submission of IPF scraper jobs",
+  "label": "AOI based submission of acq scraper jobs",
 
   "params" : [
     {
@@ -18,6 +18,11 @@
     {
         "name": "end_time",
         "from": "dataset_jpath:_source.endtime"
+    },
+    {
+        "name": "dataset_version",
+        "from": "value",
+        "value": "v2.0"
     }
   ]
 }

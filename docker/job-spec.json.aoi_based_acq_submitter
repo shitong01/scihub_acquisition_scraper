@@ -25,6 +25,10 @@
     {
       "name": "end_time",
       "destination": "context"
+    },
+    {
+      "name": "dataset_version",
+      "destination": "context"
     }
   ]
 }

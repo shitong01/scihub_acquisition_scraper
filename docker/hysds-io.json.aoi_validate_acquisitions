@@ -3,10 +3,6 @@
   "submission_type":"iteration",
   "params" : [
     {
-        "name": "es_dataset_url",
-        "from": "submitter"
-    },
-    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"

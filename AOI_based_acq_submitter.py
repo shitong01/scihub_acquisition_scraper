@@ -4,38 +4,32 @@ Cron script to submit scihub scraper jobs.
 """
 
 from __future__ import print_function
-from datetime import datetime, timedelta
-import argparse
-from hysds.celery import app
+from datetime import datetime
+import pandas as pd
+import numpy as np
 from hysds_commons.job_utils import submit_mozart_job
 
 
-def validate_temporal_input(starttime, hours_delta, days_delta):
-    '''
+def get_time_segments(start_time, end_time):
+    segments = np.arange(start_time, end_time, dtype='M8[M]')
+    time_segments = list()
+    time_segments.append(start_time)
+    for date in segments[1:]:
+        ts = pd.to_datetime(str(date))
+        d = ts.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        time_segments.append(d)
+    time_segments.append(end_time)
 
-    :param starttime:
-    :param hours_delta:
-    :param days_delta:
-    :return:
-    '''
-    if isinstance(hours_delta, int) and isinstance(days_delta, int):
-        raise Exception("Please make sure the delta specified is a number")
-    if starttime is None and hours_delta is None and days_delta is not None:
-        return "%sZ".format((datetime.utcnow()-timedelta(days=days_delta)).isoformat()), "daily"
-    elif starttime is None and hours_delta is not None and days_delta is None:
-        return "%sZ".format((datetime.utcnow() - timedelta(hours=hours_delta)).isoformat()), "hourly"
-    elif starttime is not None and hours_delta is None and days_delta is None:
-        return starttime, None
-    elif starttime is None and hours_delta is None and days_delta is None:
-        raise Exception("None of the time parameters were specified. Must specify either start time, delta of hours"
-                        " or delta of days ")
-    else:
-        raise Exception("only one of the time parameters should be specified. "
-                        "start time: {} delta of hours:{} delta of days: {}"
-                        .format(starttime, hours_delta, days_delta))
+    ttl = len(time_segments)
+    segment_pairs = list()
+    num = 0
+    while num < ttl - 1:
+        segment_pairs.append([time_segments[num], time_segments[num + 1]])
+        num += 1
+    return segment_pairs
 
 
-def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
+def get_job_params(job_type, starttime, endtime, polygon, dataset_version):
 
     rule = {
         "rule_name": job_type.lstrip('job-'),
@@ -44,11 +38,6 @@ def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
         "kwargs": '{}'
     }
     params = [
-        {
-            "name": "es_dataset_url",
-            "from": "value",
-            "value": ds_es_url,
-        },
         {
             "name": "ds_cfg",
             "from": "value",
@@ -68,19 +57,54 @@ def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
             "name": "ingest_flag",
             "from": "value",
             "value": "--ingest"
+        },
+        {
+            "name": "report_flag",
+            "from": "value",
+            "value": "--report"
+        },
+        {
+            "name": "polygon_flag",
+            "from": "value",
+            "value": "--polygon"
+        },
+        {
+            "name": "polygon",
+            "from": "value",
+            "value": polygon
+        },
+        {
+            "name": "ds_flag",
+            "from": "value",
+            "value": "--dataset_version"
+        },
+        {
+            "name": "ds_version",
+            "from": "value",
+            "value": dataset_version
+        },
+        {
+            "name": "ingest_flag",
+            "from": "value",
+            "value": "--ingest"
+        },
+        {
+            "name": "purpose_flag",
+            "from": "value",
+            "value": "--purpose"
+        },
+        {
+            "name": "purpose",
+            "from": "value",
+            "value": "--aoi_scrape"
+        },
+        {
+            "name": "report_flag",
+            "from": "value",
+            "value": "--report"
         }
     ]
 
-    if "daily" in job_name:
-        add_params = [
-            {
-                "name": "report_flag",
-                "from": "value",
-                "value": "--report"
-            }
-    ]
-
-    params = params + add_params
     return rule, params
 
 
@@ -88,41 +112,40 @@ if __name__ == "__main__":
     '''
     Main program that is run by cron to submit a scraper job
     '''
-
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset_version", help="version of acquisition dataset, e.g. v1.1")
-    parser.add_argument("starttime", help="Start time in ISO8601 format", nargs='?', required=True)
-    parser.add_argument("endtime", help="End time in ISO8601 format", nargs='?',
-                        default="%sZ" % datetime.utcnow().isoformat(), required=True)
-    parser.add_argument("--tag", help="PGE docker image tag (release, version, " +
-                                      "or branch) to propagate",
-                        default="master", required=True)
-    parser.add_argument("--polygon", required=True)
-
-    args = parser.parse_args()
     qtype = "opensearch"
-    dataset_version = args.dataset_version
-    starttime = args.starttime
-    endtime = args.endtime
-    tag = args.tag
+    ctx = open("_context.json", "r").read()
+    aoi_name = ctx.get("aoi_name")
+    dataset_version = ctx.get("dataset_version")
+    starttime = ctx.get("start_time")
+    endtime = ctx.get("end_time")
+    polygon = ctx.get("polygon")
+    tag = ctx.get("container_specification").get("version")
     job_type = "job-acquisition_ingest-aoi"
     job_spec = "{}:{}".format(job_type, tag)
 
-    rtime = datetime.utcnow()
-    ctx = open("_context.json", "r").read()
-    aoi_name = ctx.get("aoi_name", None)
+    segments = get_time_segments(starttime, endtime)
+    for segment in segments:
+        start_time = segment[0]
+        end_time = segment[1]
+        rtime = datetime.utcnow()
+        job_name = "%s-%s-%s-%s-%s" % (job_spec, aoi_name,
+                                       start_time.replace("-", "").replace(":", ""),
+                                       end_time.replace("-", "").replace(":", ""),
+                                       rtime.strftime("%d_%b_%Y_%H:%M:%S"))
+        job_name = job_name.lstrip('job-')
 
-    job_name = "%s-%s-%s-%s-%s" % (job_spec, aoi_name, starttime.replace("-", "").replace(":", ""),
-                                endtime.replace("-", "").replace(":", ""),
-                                rtime.strftime("%d_%b_%Y_%H:%M:%S"))
-    job_name = job_name.lstrip('job-')
+        # Setup input arguments here
+        rule, params = get_job_params(job_type=job_type,
+                                      starttime=start_time,
+                                      endtime=end_time,
+                                      polygon=polygon,
+                                      dataset_version=dataset_version)
 
-    # Setup input arguments here
-    rule, params = get_job_params(job_type)
-
-    print("submitting job of type {} for {}".format(job_spec, qtype))
-    submit_mozart_job({}, rule,
-        hysdsio={"id": "internal-temporary-wiring",
-                 "params": params,
-                 "job-specification": job_spec},
-        job_name=job_name)
+        print("submitting job of type {} for {}".format(job_spec, qtype))
+        submit_mozart_job({}, rule,
+                          hysdsio={
+                              "id": "internal-temporary-wiring",
+                              "params": params,
+                              "job-specification": job_spec
+                          },
+                          job_name=job_name)
