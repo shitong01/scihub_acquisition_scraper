@@ -248,7 +248,8 @@ def ingest_acq_dataset(ds, met, ds_cfg, browse=False):
         ingest(id, ds_cfg, app.conf.GRQ_UPDATE_URL, app.conf.DATASET_PROCESSED_QUEUE, ds_dir, None)
         shutil.rmtree(tmp_dir)
         return True
-    except Exception:
+    except Exception as e:
+        logging.info("Ingest Exception: {}".format(e))
         return False
 
 
@@ -383,7 +384,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
     session = requests.session()
     if None not in (user, password): session.auth = (user, password)
 
-    ctx = json.loads(open("_context.json", "r").read)
+    ctx = json.loads(open("_context.json", "r").read())
 
     # set query
     if purpose == "scrape":
@@ -467,6 +468,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
                 logger.info("Created and ingested %s\n" % acq_id)
             else:
                 slc_id = info['met']['data_product_name']
+                logger.info("Adding {} to still missing list".format(slc_id))
                 still_missing.append(slc_id)
                 logger.info("Failed to create and ingest %s\n" % acq_id)
 
@@ -538,7 +540,7 @@ if __name__ == "__main__":
     parser.add_argument("--report", help="create a report", default=False, action='store_true', required=False)
     args = parser.parse_args()
     try:
-        ds_es_url = app.conf("GRQ_ES_URL") + "/grq_{}_acquisition-s1-iw_slc/acquisition-S1-IW_SLC".format(
+        ds_es_url = app.conf["GRQ_ES_URL"] + "/grq_{}_acquisition-s1-iw_slc/acquisition-S1-IW_SLC".format(
             args.dataset_version)
         scrape(ds_es_url, args.datasets_cfg, args.starttime, args.endtime,
                args.polygon, args.user, args.password, args.dataset_version,
