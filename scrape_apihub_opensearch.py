@@ -16,7 +16,7 @@ import ast
 import shapely.wkt
 from shapely.geometry import Polygon, MultiPolygon
 import geojson
-
+import scrape_acquisition_opensearch
 from hysds.celery import app
 from hysds.dataset_ingest import ingest
 from osaka.main import get
@@ -464,7 +464,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, polygon=False, user=None, pass
     if ingest_missing and not create_only:
         for acq_id in prods_missing:
             info = prods_all[acq_id]
-            if ingest_acq_dataset(info['ds'], info['met'], ds_cfg):
+            if scrape_acquisition_opensearch.ingest_acq_dataset(info['ds'], info['met'], ds_cfg):
                 logger.info("Created and ingested %s\n" % acq_id)
             else:
                 slc_id = info['met']['data_product_name']
