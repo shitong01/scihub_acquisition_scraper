@@ -33,7 +33,7 @@ def get_time_segments(start_time, end_time):
 def get_job_params(aoi_name, job_type, starttime, endtime, polygon, dataset_version):
 
     rule = {
-        "rule_name": job_type.lstrip('job-'),
+        "rule_name": "{}-{}".format(job_type.lstrip('job-'), aoi_name),
         "queue": "factotum-job_worker-apihub_scraper_throttled",
         "priority": 5,
         "kwargs": '{}'
@@ -102,7 +102,7 @@ def get_job_params(aoi_name, job_type, starttime, endtime, polygon, dataset_vers
         {
             "name": "purpose",
             "from": "value",
-            "value": "--aoi_scrape"
+            "value": "aoi_scrape"
         },
         {
             "name": "report_flag",
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     '''
     qtype = "opensearch"
     ctx = json.loads(open("_context.json", "r").read())
-    aoi_name = ctx.get("aoi_name")
+    aoi_name = ctx.get("AOI_name")
     dataset_version = ctx.get("dataset_version")
     starttime = ctx.get("start_time")
     endtime = ctx.get("end_time")
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
         print("submitting job of type {} for {}".format(job_spec, qtype))
         print(json.dumps(params))
-        '''
+
         submit_mozart_job({}, rule,
                           hysdsio={
                               "id": "internal-temporary-wiring",
@@ -158,4 +158,3 @@ if __name__ == "__main__":
                               "job-specification": job_spec
                           },
                           job_name=job_name)
-        '''
