@@ -22,9 +22,9 @@ def validate_temporal_input(starttime, hours_delta, days_delta):
         raise Exception("Please make sure the delta specified is a number")
 
     if starttime is None and hours_delta is None and days_delta is not None:
-        return "%sZ".format((datetime.utcnow()-timedelta(days=days_delta)).isoformat()), "daily"
+        return "{}Z".format((datetime.utcnow()-timedelta(days=days_delta)).isoformat()), "daily"
     elif starttime is None and hours_delta is not None and days_delta is None:
-        return "%sZ".format((datetime.utcnow() - timedelta(hours=hours_delta)).isoformat()), "hourly"
+        return "{}Z".format((datetime.utcnow() - timedelta(hours=hours_delta)).isoformat()), "hourly"
     elif starttime is not None and hours_delta is None and days_delta is None:
         return starttime, None
     elif starttime is None and hours_delta is None and days_delta is None:
@@ -36,7 +36,7 @@ def validate_temporal_input(starttime, hours_delta, days_delta):
                         .format(starttime, hours_delta, days_delta))
 
 
-def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
+def get_job_params(job_type, job_name, starttime, endtime):
 
     rule = {
         "rule_name": job_type.lstrip('job-'),
@@ -45,11 +45,6 @@ def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
         "kwargs": '{}'
     }
     params = [
-        {
-            "name": "es_dataset_url",
-            "from": "value",
-            "value": ds_es_url,
-        },
         {
             "name": "ds_cfg",
             "from": "value",
@@ -79,9 +74,9 @@ def get_job_params(job_type, job_name, ds_es_url, starttime, endtime):
                 "from": "value",
                 "value": "--report"
             }
-    ]
+        ]
 
-    params = params + add_params
+        params = params + add_params
     return rule, params
 
 
@@ -95,11 +90,11 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_version", help="version of acquisition dataset, e.g. v1.1")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--days", help="Delta in days", nargs='?',
-                        default=5, required=False)
+                        type=int, required=False)
     group.add_argument("--hours", help="Delta in hours", nargs='?',
-                        default=5, required=False)
-    group.add_argument("starttime", help="Start time in ISO8601 format", nargs='?', required=False)
-    parser.add_argument("endtime", help="End time in ISO8601 format", nargs='?',
+                        type=int, required=False)
+    group.add_argument("--starttime", help="Start time in ISO8601 format", nargs='?', required=False)
+    parser.add_argument("--endtime", help="End time in ISO8601 format", nargs='?',
                         default="%sZ" % datetime.utcnow().isoformat(), required=False)
     parser.add_argument("--tag", help="PGE docker image tag (release, version, " +
                                       "or branch) to propagate",
@@ -127,7 +122,7 @@ if __name__ == "__main__":
     job_name = job_name.lstrip('job-')
 
     # Setup input arguments here
-    rule, params = get_job_params(job_type)
+    rule, params = get_job_params(job_type, job_name, starttime, endtime)
 
     print("submitting job of type {} for {}".format(job_spec, qtype))
     submit_mozart_job({}, rule,
