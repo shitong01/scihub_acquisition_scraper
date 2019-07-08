@@ -124,7 +124,7 @@ if __name__ == "__main__":
     dataset_version = ctx.get("dataset_version")
     starttime = ctx.get("start_time")
     endtime = ctx.get("end_time")
-    polygon = ctx.get("polygon")
+    polygon = ctx.get("spatial_extent")
     tag = ctx.get("container_specification").get("version")
     job_type = "job-acquisition_ingest-aoi"
     job_spec = "{}:{}".format(job_type, tag)
