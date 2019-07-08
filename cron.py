@@ -116,9 +116,18 @@ if __name__ == "__main__":
 
     rtime = datetime.utcnow()
 
-    job_name = "%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
-                                endtime.replace("-", "").replace(":", ""),
-                                rtime.strftime("%d_%b_%Y_%H:%M:%S"))
+    if days_delta is not None:
+        job_name = "%s-%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
+                                       "daily", endtime.replace("-", "").replace(":", ""),
+                                       rtime.strftime("%d_%b_%Y_%H:%M:%S"))
+    elif hours_delta is not None:
+        job_name = "%s-%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
+                                       "hourly",endtime.replace("-", "").replace(":", ""),
+                                       rtime.strftime("%d_%b_%Y_%H:%M:%S"))
+    else:
+        job_name = "%s-%s-%s-%s" % (job_spec, starttime.replace("-", "").replace(":", ""),
+                                    endtime.replace("-", "").replace(":", ""),
+                                    rtime.strftime("%d_%b_%Y_%H:%M:%S"))
     job_name = job_name.lstrip('job-')
 
     # Setup input arguments here
