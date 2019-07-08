@@ -11,6 +11,9 @@ RUN sudo pip install shapely
 #install elasticsearch
 RUN sudo pip install elasticsearch
 
+#install pandas
+RUN sudo pip install pandas
+
 # copy packages
 COPY . /home/ops/verdi/ops/scihub_acquisition_scraper
 RUN set -ex \

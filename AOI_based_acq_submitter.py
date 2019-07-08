@@ -5,6 +5,7 @@ Cron script to submit scihub scraper jobs.
 
 from __future__ import print_function
 from datetime import datetime
+import json
 import pandas as pd
 import numpy as np
 from hysds_commons.job_utils import submit_mozart_job
@@ -39,7 +40,7 @@ def get_job_params(aoi_name, job_type, starttime, endtime, polygon, dataset_vers
     }
     params = [
         {
-            "name": "ds_cfg",
+            "name": "aoi_name",
             "from": "value",
             "value": aoi_name
         },
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     Main program that is run by cron to submit a scraper job
     '''
     qtype = "opensearch"
-    ctx = open("_context.json", "r").read()
+    ctx = json.loads(open("_context.json", "r").read())
     aoi_name = ctx.get("aoi_name")
     dataset_version = ctx.get("dataset_version")
     starttime = ctx.get("start_time")
@@ -148,6 +149,8 @@ if __name__ == "__main__":
                                       dataset_version=dataset_version)
 
         print("submitting job of type {} for {}".format(job_spec, qtype))
+        print(json.dumps(params))
+        '''
         submit_mozart_job({}, rule,
                           hysdsio={
                               "id": "internal-temporary-wiring",
@@ -155,3 +158,4 @@ if __name__ == "__main__":
                               "job-specification": job_spec
                           },
                           job_name=job_name)
+        '''
