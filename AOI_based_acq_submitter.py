@@ -35,7 +35,7 @@ def get_job_params(aoi_name, job_type, starttime, endtime, polygon, dataset_vers
     rule = {
         "rule_name": "{}-{}".format(job_type.lstrip('job-'), aoi_name),
         "queue": "factotum-job_worker-apihub_scraper_throttled",
-        "priority": 5,
+        "priority": 6,
         "kwargs": '{}'
     }
     params = [
