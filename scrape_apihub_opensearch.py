@@ -359,7 +359,7 @@ def create_report(starttime, endtime, polygon, still_missing, aoi_name=None, ver
     dataset = {
         "version": version,
         "label": label,
-        "location": polygon,
+        "location": json.loads(polygon),
         "starttime": starttime,
         "endtime": endtime
     }
