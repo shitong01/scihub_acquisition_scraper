@@ -207,7 +207,7 @@ def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     """Create acquisition dataset. Return tuple of (dataset ID, dataset dir)."""
 
     # create dataset dir
-    id = "acquisition-{}_{}_{}_{}-esa_scihub".format(met["platform"],get_timestamp_for_filename(met["sensingStart"]), met["track_number"], met["sensoroperationalmode"])
+    id = "acquisition-{}-esa_scihub".format(met["title"])
     root_ds_dir = os.path.abspath(root_ds_dir)
     ds_dir = os.path.join(root_ds_dir, id)
     if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0755)
@@ -365,6 +365,7 @@ def create_report(starttime, endtime, polygon, still_missing, aoi_name=None, ver
     }
 
     met = dict()
+    met["missing_count"] = len(still_missing)
     met["missing acquisitions"] = still_missing
 
     os.makedirs(label, 0755)

@@ -18,6 +18,13 @@
         "name": "ingest_flag",
         "from": "value",
         "value": "--ingest"
+    },
+    {
+        "name": "report_flag",
+        "from": "value",
+        "value": "--report",
+        "optional": true
+
     }
   ]
 }

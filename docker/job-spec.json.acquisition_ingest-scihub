@@ -25,6 +25,10 @@
     {   
         "name": "ingest_flag",
         "destination": "positional"
+    },
+    {
+        "name": "report_flag",
+        "destination": "positional"
     }
   ]
 }
