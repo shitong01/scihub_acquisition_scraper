@@ -136,11 +136,11 @@ def submit_aoi_ipf(aoi):
     }
 
     print('submitting jobs with params:')
-    print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
-    submit_job(job_type=JOB_TYPE, release=JOB_RELEASE, product_id= aoi.get("id"), tag = "aoi_ipf_submitter-{}"
-               .format(aoi.get("id")), job_params=job_params)
+    print(json.dumps(job_params, sort_keys=True, indent=4, separators=(',', ': ')))
+    job_id = submit_job(job_type=JOB_TYPE, release=JOB_RELEASE, product_id= aoi.get("id"), tag = "aoi_ipf_submitter-{}"
+                        .format(aoi.get("id")), job_params=job_params)
 
-    print("For {} , AOI IPF Submitter Job ID: {}".format(aoi.get("_id"), mozart_job_id))
+    print("For {} , AOI IPF Submitter Job ID: {}".format(aoi.get("_id"), job_id))
 
 
 if __name__ == "__main__":
@@ -166,11 +166,5 @@ def lambda_handler(context):
     # submit mozart jobs to update ES
     job_type = JOB_TYPE
     job_release = JOB_RELEASE
-    job_params = {"sns_message": sns_message}  # pass the whole SNS message
-    if TAGGING is True:
-        job_params["product_tagging"] = True
-    else:
-        job_params["product_tagging"] = False
-
-    job_tag = "asf_delivered"
-    submit_job(job_type, job_release, product, job_tag, json.dumps(job_params))
+    for aoi in get_aois():
+        submit_aoi_ipf(aoi)

@@ -1,22 +1,24 @@
-# hysds_lambda_funcs
+# IPF job submission lambda_funcs
 This lambda was added for future replacement of the IPF cron settings on factotum.
-
+The idea was to use schedule lambdas.
 
 ## adding external libraries
 ```
-cd hysds_lambda_funcs
+cd lambda_ipf_submitter
 pip install -t <lib> .
 ```
 
 For example to install `requests`
 ```
-cd hysds_lambda_funcs
+cd lambda_ipf_submitter
 pip install -t requests .
 ```
 
 ## create deployment package
 ```
-cd hysds_lambda_funcs
-ln -sf lambda_function-proxy_mozart.py lambda_function.py
-zip -r -9 ../hysds_lambda_funcs.zip *
+cdlambda_ipf_submitter
+ln -sf lambda_function-ipf_scrape_cron.py lambda_function.py
+zip -r -9 ../lambda_ipf_submitter.zip *
 ```
+
+NOTE: This implementation is not complete
