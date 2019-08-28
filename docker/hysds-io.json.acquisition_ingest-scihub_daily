@@ -1,0 +1,30 @@
+{
+  "submission_type":"individual",
+  "params" : [
+    {
+        "name": "ds_cfg",
+        "from": "value",
+        "value": "datasets.json"
+    },
+    {
+        "name": "starttime",
+        "from": "submitter",
+        "placeholder": "start time in format YYYY-mm-ddTHH:MM:SS.sssZ"
+    },
+    {
+        "name": "endtime",
+        "from": "submitter",
+        "placeholder": "end time in format YYYY-mm-ddTHH:MM:SS.sssZ"
+    },
+    {
+        "name": "ingest_flag",
+        "from": "value",
+        "value": "--ingest"
+    },
+    {
+        "name": "report_flag",
+        "from": "value",
+        "value": "--report"
+    }
+  ]
+}

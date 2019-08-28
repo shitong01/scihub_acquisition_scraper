@@ -3,17 +3,14 @@
   "submission_type":"individual",
   "params" : [
     {
-        "name": "es_dataset_url",
-        "from": "submitter"
-    },
-    {
         "name": "ds_cfg",
         "from": "value",
         "value": "datasets.json"
     },
     {
         "name": "slc_id",
-        "from": "submitter"
+        "from": "submitter",
+        "placeholder": "SLC Name"
     },
     {
         "name": "ingest_flag",

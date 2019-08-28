@@ -4,11 +4,13 @@
   "params" : [
     {
         "name": "starttime",
-        "from": "submitter"
+        "from": "submitter",
+        "placeholder": "start time in format YYYY-mm-ddTHH:MM:SS.sssZ"
     },
     {
         "name": "endtime",
-        "from": "submitter"
+        "from": "submitter",
+        "placeholder": "end time in format YYYY-mm-ddTHH:MM:SS.sssZ"
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+      "ipath": "ariamh::data/acquisition-S1-IW_SLC",
+      "match_pattern": "/acquisition-(?P<spacecraft>S1\\w)_IW_SLC__(?P<misc>.*?)_(?P<year>\\d{4})(?P<month>\\d{2})(?P<day>\\d{2})(?P<timestamp>.+)-esa_scihub$",
+      "alt_match_pattern": null,
+      "extractor": null,
+      "level": "l1",
+      "type": "acquisition",
+      "version": "2.1"
+}

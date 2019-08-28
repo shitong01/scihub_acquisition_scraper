@@ -1,0 +1,2 @@
+# Legacy Scripts
+The scripts in this folder are from the older acquisition scraping code base. They are currently DEPRECATED. For reusing code or for future references I've archived them in this folder.

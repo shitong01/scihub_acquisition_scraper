@@ -1,9 +1,9 @@
 {
-  "submission_type":"individual",
+  "submission_type":"iteration",
   "params" : [
     {
         "name": "aoi_name",
-        "from": "submitter"
+        "from": "dataset_jpath:_id"
     },
     {
         "name": "ds_cfg",
@@ -12,11 +12,11 @@
     },
     {
         "name": "starttime",
-        "from": "submitter"
+        "from": "dataset_jpath:_source.starttime"
     },
     {
         "name": "endtime",
-        "from": "submitter"
+        "from": "dataset_jpath:_source.endtime"
     },
     {
       "name": "polygon_flag",
@@ -25,16 +25,8 @@
     },
     {
         "name": "polygon",
-        "from": "submitter"
-    },
-    {
-        "name": "ds_flag",
-        "from": "value",
-        "value": "--ingest"
-    },
-    {
-        "name": "ds_version",
-        "from": "submitter"
+        "from": "dataset_jpath:_source.location",
+        "lambda": "lambda x: __import__('json').dumps(x).replace(' ','')"
     },
     {
         "name": "ingest_flag",

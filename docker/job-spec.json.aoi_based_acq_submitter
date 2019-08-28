@@ -1,5 +1,5 @@
 {
-  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/AOI_based_acq_submitter.py",
+  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/acquisition_ingest/AOI_based_acq_submitter.py",
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },

@@ -1,0 +1,3 @@
+25 0 * * * /home/ops/verdi/bin/python /home/ops/verdi/ops/scihub_acquisition_scraper/crons/cron.py --tag=release-20190710 opensearch --dataset_version v2.0 --days 5 > /home/ops/verdi/log/cron-scrape_apihub_opensearch.log 2>&1
+
+40 * * * * /home/ops/verdi/bin/python /home/ops/verdi/ops/scihub_acquisition_scraper/crons/cron.py --tag=release-20190710 opensearch --dataset_version v2.0 --hours 5 > /home/ops/verdi/log/cron-scrape_apihub_opensearch.log 2>&1

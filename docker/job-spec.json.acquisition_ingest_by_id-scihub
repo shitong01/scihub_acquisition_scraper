@@ -1,5 +1,5 @@
 {
-  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_acquisition_opensearch.py",
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/acquisition_ingest/scrape_acquisition_opensearch.py",
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },
@@ -10,10 +10,6 @@
   "soft_time_limit": 3300,
   "time_limit": 3600,
   "params" : [
-    {
-        "name": "es_dataset_url",
-        "destination": "positional"
-    },
     {
         "name": "ds_cfg",
         "destination": "positional"

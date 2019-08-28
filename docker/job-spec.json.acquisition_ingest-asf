@@ -1,5 +1,5 @@
 {
-  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_asf.py",
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/ipf_scrape/scrape_asf.py",
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },

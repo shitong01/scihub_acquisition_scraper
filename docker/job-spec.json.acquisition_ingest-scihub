@@ -1,5 +1,5 @@
 {
-  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/scrape_apihub_opensearch.py",
+  "command": "/home/ops/verdi/ops/scihub_acquisition_scraper/acquisition_ingest/scrape_apihub_opensearch.py",
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },
@@ -14,20 +14,16 @@
         "name": "ds_cfg",
         "destination": "positional"
     },
-    {   
+    {
         "name": "starttime",
         "destination": "positional"
     },
-    {   
+    {
         "name": "endtime",
         "destination": "positional"
     },
-    {   
-        "name": "ingest_flag",
-        "destination": "positional"
-    },
     {
-        "name": "report_flag",
+        "name": "ingest_flag",
         "destination": "positional"
     }
   ]

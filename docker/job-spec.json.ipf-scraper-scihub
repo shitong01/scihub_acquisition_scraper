@@ -1,5 +1,5 @@
 {
-  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/ipf_version.py",
+  "command": "python /home/ops/verdi/ops/scihub_acquisition_scraper/ipf_scrape/ipf_version.py",
   "imported_worker_files": {
     "/home/ops/.netrc": "/home/ops/.netrc"
   },
