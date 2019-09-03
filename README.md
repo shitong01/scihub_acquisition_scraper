@@ -30,3 +30,6 @@ The job types that can be used on demand are:
 - `job-ipf-scraper-asf`: Finds and fills IPF version for acquisitions missing it from ASF.
 - `job-ipf-scraper-scihub`: Finds and fills IPF version for acquisitions missing it from SciHub.
 - `job-acquisition_ingest-asf` : Ingest acquisitions from ASF. Takes start time and end time as input. Not used in current operational system.
+
+## Catch Up
+These scripts can be found under the `ops_scripts`.
