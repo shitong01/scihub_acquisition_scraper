@@ -1,3 +1,4 @@
+from builtins import str
 import json
 from lxml.etree import fromstring, ElementTree
 import re
