@@ -6,17 +6,17 @@
   "recommended-queues": [
     "factotum-job_worker-apihub_scraper_throttled"
   ],
-  "disk_usage":"10GB",
+  "disk_usage": "10GB",
   "soft_time_limit": 3300,
   "time_limit": 3600,
-  "params" : [
+  "params": [
     {
-        "name": "starttime",
-        "destination": "context"
+      "name": "starttime",
+      "destination": "context"
     },
     {
-        "name": "endtime",
-       "destination": "context"
+      "name": "endtime",
+      "destination": "context"
     }
   ]
 }

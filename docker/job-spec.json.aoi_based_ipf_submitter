@@ -6,10 +6,10 @@
   "required-queues": [
     "factotum-job_worker-small"
   ],
-  "disk_usage":"4GB",
+  "disk_usage": "4GB",
   "soft_time_limit": 7200,
   "time_limit": 7800,
-  "params" : [
+  "params": [
     {
       "name": "AOI_name",
       "destination": "context"

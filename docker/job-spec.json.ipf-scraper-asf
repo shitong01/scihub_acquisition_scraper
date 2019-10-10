@@ -6,34 +6,33 @@
   "recommended-queues": [
     "ipf-scraper-asf"
   ],
-  "disk_usage":"10GB",
+  "disk_usage": "10GB",
   "soft_time_limit": 480,
   "time_limit": 960,
-  "params" : [
+  "params": [
     {
-        "name": "acq_id",
-        "destination": "context"
+      "name": "acq_id",
+      "destination": "context"
     },
     {
-        "name": "acq_met",
-        "destination": "context"
+      "name": "acq_met",
+      "destination": "context"
     },
     {
-        "name": "index",
-        "destination": "context"
+      "name": "index",
+      "destination": "context"
     },
     {
-        "name": "dataset_type",
-        "destination": "context"
+      "name": "dataset_type",
+      "destination": "context"
     },
     {
-        "name": "endpoint",
-        "destination": "context"
-
+      "name": "endpoint",
+      "destination": "context"
     },
     {
-        "name": "ds_cfg",
-        "destination": "positional"
+      "name": "ds_cfg",
+      "destination": "positional"
     }
   ]
 }

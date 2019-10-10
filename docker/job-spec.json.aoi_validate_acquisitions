@@ -6,33 +6,33 @@
   "required-queues": [
     "factotum-job_worker-apihub_scraper_throttled"
   ],
-  "disk_usage":"10GB",
+  "disk_usage": "10GB",
   "soft_time_limit": 3300,
   "time_limit": 3600,
-  "params" : [
+  "params": [
     {
-        "name": "ds_cfg",
-        "destination": "positional"
+      "name": "ds_cfg",
+      "destination": "positional"
     },
     {
-        "name": "starttime",
-        "destination": "positional"
+      "name": "starttime",
+      "destination": "positional"
     },
     {
-        "name": "endtime",
-        "destination": "positional"
+      "name": "endtime",
+      "destination": "positional"
     },
     {
-        "name": "polygon_flag",
-        "destination": "positional"
+      "name": "polygon_flag",
+      "destination": "positional"
     },
     {
-        "name": "polygon",
-        "destination": "positional"
+      "name": "polygon",
+      "destination": "positional"
     },
     {
-       "name": "ingest_flag",
-       "destination": "positional"
+      "name": "ingest_flag",
+      "destination": "positional"
     },
     {
       "name": "purpose_flag",
@@ -44,4 +44,3 @@
     }
   ]
 }
-
