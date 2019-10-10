@@ -4,13 +4,16 @@ Query ApiHub (ODATA) for all S1 SLC scenes globally and create
 acquisition datasets.
 """
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import os, sys, time, re, requests, json, logging, traceback, argparse
 import shutil, hashlib, getpass, tempfile, backoff
 from lxml.etree import fromstring, tostring
 from subprocess import check_call
 #import requests_cache
 from datetime import datetime, timedelta
-from urlparse import urlparse
+from urllib.parse import urlparse
 from tabulate import tabulate
 from requests.packages.urllib3.exceptions import (InsecureRequestWarning,
                                                   InsecurePlatformWarning)
@@ -142,7 +145,7 @@ def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     id = met['data_product_name']
     root_ds_dir = os.path.abspath(root_ds_dir)
     ds_dir = os.path.join(root_ds_dir, id)
-    if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0755)
+    if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0o755)
 
     # append source to met
     met['query_api'] = "odata"
@@ -227,7 +230,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
         logger.info("Found: {0} results".format(count))
         for met in entries:
             try: massage_result(met) 
-            except Exception, e:
+            except Exception as e:
                 logger.error("Failed to massage result: %s" % json.dumps(met, indent=2, sort_keys=True))
                 logger.error("Extracted entries: %s" % json.dumps(entries, indent=2, sort_keys=True))
                 raise
@@ -246,7 +249,7 @@ def scrape(ds_es_url, ds_cfg, starttime, endtime, email_to, user=None, password=
     # check if exists
     prods_missing = []
     prods_found = []
-    for acq_id, info in prods_all.iteritems():
+    for acq_id, info in prods_all.items():
         r = rhead('%s/%s' % (ds_es_url, acq_id))
         if r.status_code == 200:
             prods_found.append(acq_id)

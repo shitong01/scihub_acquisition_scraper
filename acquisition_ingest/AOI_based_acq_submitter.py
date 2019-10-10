@@ -4,6 +4,7 @@ Cron script to submit scihub scraper jobs.
 """
 
 from __future__ import print_function
+from builtins import str
 from datetime import datetime
 import json
 import pandas as pd

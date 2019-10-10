@@ -4,6 +4,8 @@ Query ApiHub (OpenSearch) for all S1 SLC scenes globally and create
 acquisition datasets.
 """
 
+from builtins import str
+from builtins import map
 import os, sys, time, re, requests, json, logging, traceback, argparse
 import shutil, hashlib, getpass, tempfile, backoff
 from subprocess import check_call
@@ -205,7 +207,7 @@ def create_acq_dataset(ds, met, root_ds_dir=".", browse=False):
     id = "acquisition-{}-esa_scihub".format(met["title"])
     root_ds_dir = os.path.abspath(root_ds_dir)
     ds_dir = os.path.join(root_ds_dir, id)
-    if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0755)
+    if not os.path.isdir(ds_dir): os.makedirs(ds_dir, 0o755)
 
     # append source to met
     met['query_api'] = "opensearch"
@@ -289,7 +291,7 @@ def scrape(ds_es_url, ds_cfg, identifier, user=None, password=None,
     for met in entries:
         try:
             massage_result(met)
-        except Exception, e:
+        except Exception as e:
             logger.error("Failed to massage result: %s" % json.dumps(met, indent=2, sort_keys=True))
             logger.error("Extracted entries: %s" % json.dumps(entries, indent=2, sort_keys=True))
             raise
@@ -359,11 +361,11 @@ def convert_geojson(input_geojson):
                 raise Exception('unable to parse input geojson string: {0}'.format(input_geojson))
     # attempt to parse the coordinates to ensure a valid geojson
     # print('input_geojson: {}'.format(input_geojson))
-    depth = lambda L: isinstance(L, list) and max(map(depth, L)) + 1
+    depth = lambda L: isinstance(L, list) and max(list(map(depth, L))) + 1
     d = depth(input_geojson)
     try:
         # if it's a full geojson
-        if d is False and 'coordinates' in input_geojson.keys():
+        if d is False and 'coordinates' in list(input_geojson.keys()):
             polygon = MultiPolygon([Polygon(input_geojson['coordinates'][0])])
             return polygon
         else:  # it's a list of coordinates

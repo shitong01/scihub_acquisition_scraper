@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 import os, sys, re, json, requests, logging, traceback, argparse, hashlib
 from datetime import datetime
 
 from hysds_commons.job_utils import submit_mozart_job
 from hysds.celery import app
 
-from sling_acquisition import get_date
+from .sling_acquisition import get_date
 
 
 # set logger
