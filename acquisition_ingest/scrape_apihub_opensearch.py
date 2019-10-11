@@ -268,7 +268,7 @@ def get_existing_acqs(start_time, end_time, location=False):
     :param location:
     :param start_time:
     :param end_time:
-    :return:
+    :return: acq_ids, set of existing acquisition ids
     """
     index = "grq_v2.0_acquisition-s1-iw_slc"
 
@@ -278,24 +278,8 @@ def get_existing_acqs(start_time, end_time, location=False):
                 "query": {
                     "bool": {
                         "must": [
-                            {
-                                "range":
-                                    {
-                                        "endtime":
-                                            {
-                                                "from": start_time
-                                            }
-                                    }
-                            },
-                            {
-                                "range":
-                                    {
-                                        "starttime":
-                                            {
-                                                "to": end_time
-                                            }
-                                    }
-                            }
+                            {"range": {"endtime": {"from": start_time}}},
+                            {"range": {"starttime": {"to": end_time}}}
                         ]
                     }
                 }
@@ -305,26 +289,32 @@ def get_existing_acqs(start_time, end_time, location=False):
 
     if location:
         geo_shape = {
-                    "geo_shape": {
-                        "location": {
-                            "shape": location
-                        }
-                    }
-                }
+            "geo_shape": {
+                "location": {"shape": location}
+            }
+        }
         query["query"]["filtered"]["filter"] = geo_shape
 
-    acq_ids = []
+    acq_ids = set()
     rest_url = app.conf["GRQ_ES_URL"][:-1] if app.conf["GRQ_ES_URL"].endswith('/') else app.conf["GRQ_ES_URL"]
-    url = "{}/{}/_search?search_type=scan&scroll=60&size=10000".format(rest_url, index)
-    r = requests.post(url, data=json.dumps(query))
+    es_url = "{}/{}/_search?search_type=scan&scroll=60&size=10000".format(rest_url, index)
+    r = requests.post(es_url, data=json.dumps(query))
+
+    if r.status_code == 404:
+        logger.error("%s index does not exist, creating index" % index)
+        create_acq_index_url = "%s/%s" % (rest_url, index)
+        requests.put(create_acq_index_url)
+        logger.info("created index: %s" % index)
+        return set()
+
     r.raise_for_status()
     scan_result = r.json()
     count = scan_result['hits']['total']
     if count == 0:
-        return []
+        return set()
     if '_scroll_id' not in scan_result:
         print("_scroll_id not found in scan_result. Returning empty array for the query :\n%s" % query)
-        return []
+        return set()
     scroll_id = scan_result['_scroll_id']
     hits = []
     while True:
@@ -336,7 +326,7 @@ def get_existing_acqs(start_time, end_time, location=False):
         hits.extend(res['hits']['hits'])
 
     for item in hits:
-        acq_ids.append(item.get("_source").get("metadata").get("id"))
+        acq_ids.add(item.get("_source").get("metadata").get("id"))
 
     return acq_ids
 
