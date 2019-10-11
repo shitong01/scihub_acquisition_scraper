@@ -16,5 +16,8 @@ RUN set -ex \
  && pip install elasticsearch \
  && pip install pandas
 
+ENV PYTHONPATH "/home/ops/verdi/ops/scihub_acquisition_scraper/acquisition_ingest/:$PYTHONPATH"
+
+
 WORKDIR /home/ops
 CMD ["/bin/bash", "--login"]

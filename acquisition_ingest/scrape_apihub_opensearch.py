@@ -18,7 +18,7 @@ import ast
 import shapely.wkt
 from shapely.geometry import Polygon, MultiPolygon
 import geojson
-from acquisition_ingest import scrape_acquisition_opensearch
+import scrape_acquisition_opensearch
 from hysds.celery import app
 from hysds.dataset_ingest import ingest
 from osaka.main import get
