@@ -104,7 +104,7 @@ def submit_aoi_ipf(aoi):
     print('submitting jobs with params:')
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
     mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params,
-                                                         "job-specification": "job-AOI_based_ipf_submitter:master"},
+                                                         "job-specification": "job-aoi_based_ipf_submitter:master"},
                                       job_name='job-%s-%s-%s' % ("aoi_ipf_submitter", aoi.get("id"), "master"),
                                       enable_dedup=False)
     print("For {} , AOI IPF Submitter Job ID: {}".format(aoi.get("_id"), mozart_job_id))
