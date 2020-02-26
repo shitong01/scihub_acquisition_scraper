@@ -40,7 +40,7 @@ def submit_global_ipf(spatial_extent, start_time, end_time, release):
 
     print('submitting jobs with params:')
     print(json.dumps(params, sort_keys=True, indent=4, separators=(',', ': ')))
-    mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params, "job-specification": "job-AOI_based_ipf_submitter:{}".format(release)}, job_name='job-%s-%s-%s' % ("ipf_submitter", "global", release), enable_dedup=False)
+    mozart_job_id = submit_mozart_job({}, rule, hysdsio={"id": "internal-temporary-wiring", "params": params, "job-specification": "job-aoi_based_ipf_submitter:{}".format(release)}, job_name='job-%s-%s-%s' % ("ipf_submitter", "global", release), enable_dedup=False)
     print("For {} , IPF Submitter Job ID: {}".format("Global", mozart_job_id))
 
 
