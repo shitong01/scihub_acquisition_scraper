@@ -12,7 +12,8 @@ RUN sudo pip install shapely
 RUN sudo pip install elasticsearch
 
 #install pandas
-RUN sudo pip install pandas
+RUN sudo pip install numpy==1.16.5
+RUN sudo pip install pandas==0.24.2
 
 # copy packages
 COPY . /home/ops/verdi/ops/scihub_acquisition_scraper
